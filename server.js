@@ -4,6 +4,30 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
+// WebSocket support for real-time updates
+let WebSocketServer;
+try {
+  // Try to import the ws package if it's installed
+  WebSocketServer = require('ws').Server;
+} catch (error) {
+  // Create a simple mock WebSocketServer if the package is not available
+  console.warn('ws package not available, using mock WebSocketServer');
+  WebSocketServer = class MockWebSocketServer {
+    constructor(options) {
+      this.options = options;
+      this.clients = new Set();
+      console.log('MockWebSocketServer initialized');
+    }
+    on(event, callback) {
+      console.log(`MockWebSocketServer: registered ${event} handler`);
+    }
+    // Add mock broadcast method
+    broadcast(data) {
+      console.log(`MockWebSocketServer: would broadcast ${JSON.stringify(data)}`);
+    }
+  };
+}
+
 // Import database setup
 try {
   require('dotenv').config();
@@ -131,6 +155,20 @@ const apiRoutes = {
             result = rows[0];
           }
 
+          // Broadcast progress update to all connected WebSocket clients
+          if (wss && typeof wss.broadcast === 'function') {
+            wss.broadcast({
+              type: 'progress_update',
+              data: {
+                userId,
+                gameType,
+                difficulty,
+                level,
+                timestamp: new Date().toISOString()
+              }
+            });
+          }
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(result));
         } catch (error) {
@@ -182,6 +220,17 @@ const apiRoutes = {
             RETURNING *`,
             [userId, gameType, difficulty, moves || 0, timeTaken || 0, completed || false]
           );
+          
+          // Broadcast game session to all connected WebSocket clients
+          if (wss && typeof wss.broadcast === 'function') {
+            wss.broadcast({
+              type: 'game_session',
+              data: {
+                ...rows[0],
+                timestamp: new Date().toISOString()
+              }
+            });
+          }
           
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(rows[0]));
@@ -603,12 +652,78 @@ const server = http.createServer(async (req, res) => {
       console.log('No DATABASE_URL provided, starting server without database functionality.');
     }
     
+    // Set up WebSocket server for real-time updates
+    const wss = new WebSocketServer({ server, path: '/ws' });
+    
+    // Add broadcast functionality to WebSocketServer
+    wss.broadcast = function(data) {
+      if (!this.clients) return;
+      
+      this.clients.forEach((client) => {
+        if (client.readyState === 1) { // WebSocket.OPEN in a real implementation
+          client.send(JSON.stringify(data));
+        }
+      });
+    };
+
+    // Track connected clients
+    wss.on('connection', (ws) => {
+      console.log('WebSocket client connected');
+      
+      // Send welcome message to new client
+      ws.send(JSON.stringify({ 
+        type: 'welcome', 
+        data: { 
+          message: 'Connected to Puzzle World WebSocket Server',
+          clientCount: wss.clients.size,
+          time: new Date().toISOString()
+        } 
+      }));
+
+      // Set up message handler for client messages
+      ws.on('message', (message) => {
+        try {
+          const data = JSON.parse(message);
+          console.log('Received message:', data);
+          
+          // Echo the message back to acknowledge receipt
+          ws.send(JSON.stringify({ type: 'ack', data }));
+          
+          // If the message is a game update, broadcast to all connected clients
+          if (data.type === 'game_update') {
+            wss.broadcast({
+              type: 'game_update',
+              data: data.data
+            });
+          }
+        } catch (error) {
+          console.error('Error processing WebSocket message:', error);
+          ws.send(JSON.stringify({ 
+            type: 'error', 
+            data: { message: 'Error processing message' } 
+          }));
+        }
+      });
+      
+      // Handle client disconnect
+      ws.on('close', () => {
+        console.log('WebSocket client disconnected');
+      });
+      
+      // Handle errors
+      ws.on('error', (error) => {
+        console.error('WebSocket error:', error);
+      });
+    });
+    
     // Start HTTP server (database or not)
     server.listen(PORT, '0.0.0.0', () => {
       if (dbConnected) {
         console.log(`Server running at http://localhost:${PORT} with database integration`);
+        console.log(`WebSocket server running at ws://localhost:${PORT}/ws`);
       } else {
         console.log(`Server running at http://localhost:${PORT} (without database integration)`);
+        console.log(`WebSocket server running at ws://localhost:${PORT}/ws`);
       }
     });
   } catch (error) {

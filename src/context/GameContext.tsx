@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GameType, Difficulty, GameProgress } from '../types';
-import { getGameProgress, updateLevelProgress } from '../utils/storage';
 import { getNextDifficulty } from '../utils/helpers';
+import { api } from '../api/bridge';
 
 interface GameContextProps {
   progress: GameProgress;
@@ -52,11 +52,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     },
   });
 
-  // Load progress from storage on component mount
+  // Load progress from storage or API on component mount
   useEffect(() => {
     const loadProgress = async () => {
       try {
-        const savedProgress = await getGameProgress();
+        const savedProgress = await api.getGameProgress();
         setProgress(savedProgress);
       } catch (error) {
         console.error('Error loading game progress:', error);
@@ -73,8 +73,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const currentLevel = progress[gameType][difficulty];
       const newLevel = currentLevel + 1;
       
-      // Update storage
-      await updateLevelProgress(gameType, difficulty, newLevel);
+      // Get the current user (in a real app, you'd get this from auth context)
+      const user = await api.getUser();
+      const userId = user?.id || 1; // Default to user ID 1 if no user found
+      
+      // Update via API
+      await api.updateGameProgress(userId, gameType, difficulty, newLevel);
       
       // Update state
       setProgress((prev) => ({

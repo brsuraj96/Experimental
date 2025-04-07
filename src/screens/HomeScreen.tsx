@@ -4,7 +4,7 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Dimensions,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -12,6 +12,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, GameType, Difficulty, GameInfo } from '../types';
 import { theme } from '../styles/theme';
 import GameCard from '../components/common/GameCard';
+import RealtimeActivities from '../components/common/RealtimeActivities';
 import useOrientation from '../hooks/useOrientation';
 import IconSudoku from '../assets/icons/IconSudoku';
 import IconSlideTiles from '../assets/icons/IconSlideTiles';
@@ -156,6 +157,11 @@ const HomeScreen = () => {
           { paddingHorizontal: theme.spacing.medium },
         ]}
       >
+        {/* Show real-time activities for web platform only */}
+        {Platform.OS === 'web' && (
+          <RealtimeActivities />
+        )}
+        
         <View style={styles.gamesGrid}>
           {games.map((game) => (
             <GameCard
