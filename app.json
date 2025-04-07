@@ -1,0 +1,30 @@
+{
+  "name": "PuzzleWorld",
+  "displayName": "Puzzle World",
+  "expo": {
+    "name": "Puzzle World",
+    "slug": "puzzle-world",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./generated-icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#1E1E2F"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.puzzleworld.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1E1E2F"
+      },
+      "package": "com.puzzleworld.app"
+    },
+    "web": {
+      "favicon": "./generated-icon.png",
+      "bundler": "webpack"
+    }
+  }
+}

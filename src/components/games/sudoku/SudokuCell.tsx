@@ -1,0 +1,145 @@
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { theme } from '../../../styles/theme';
+
+interface SudokuCellProps {
+  value: number | null;
+  notes: boolean[];
+  isFixed: boolean;
+  isSelected: boolean;
+  isHighlighted: boolean;
+  isError?: boolean;
+  size: number;
+  onPress: () => void;
+  rightBorder: boolean;
+  bottomBorder: boolean;
+}
+
+const SudokuCell: React.FC<SudokuCellProps> = ({
+  value,
+  notes,
+  isFixed,
+  isSelected,
+  isHighlighted,
+  isError,
+  size,
+  onPress,
+  rightBorder,
+  bottomBorder,
+}) => {
+  // Render notes grid (3x3) when cell has no value
+  const renderNotes = () => {
+    if (value !== null) return null;
+
+    const noteSize = size / 3;
+    
+    return (
+      <View style={styles.notesContainer}>
+        {notes.map((isActive, index) => {
+          if (!isActive) return null;
+          
+          const noteValue = index + 1;
+          const row = Math.floor(index / 3);
+          const col = index % 3;
+          
+          return (
+            <Text
+              key={index}
+              style={[
+                styles.noteText,
+                {
+                  left: col * noteSize,
+                  top: row * noteSize,
+                  width: noteSize,
+                  height: noteSize,
+                },
+              ]}
+            >
+              {noteValue}
+            </Text>
+          );
+        })}
+      </View>
+    );
+  };
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.cell,
+        {
+          width: size,
+          height: size,
+          borderRightWidth: rightBorder ? 2 : 0.5,
+          borderBottomWidth: bottomBorder ? 2 : 0.5,
+        },
+        isHighlighted && styles.highlightedCell,
+        isSelected && styles.selectedCell,
+        isError && styles.errorCell,
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {value ? (
+        <Text
+          style={[
+            styles.value,
+            isFixed && styles.fixedValue,
+            isError && styles.errorValue,
+          ]}
+        >
+          {value}
+        </Text>
+      ) : (
+        renderNotes()
+      )}
+    </TouchableOpacity>
+  );
+};
+
+const styles = StyleSheet.create({
+  cell: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderColor: '#333',
+    backgroundColor: theme.colors.backgroundLight,
+    position: 'relative',
+  },
+  highlightedCell: {
+    backgroundColor: 'rgba(77, 208, 225, 0.2)',
+  },
+  selectedCell: {
+    backgroundColor: 'rgba(255, 111, 97, 0.3)',
+  },
+  errorCell: {
+    backgroundColor: 'rgba(239, 83, 80, 0.2)',
+  },
+  value: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+  fixedValue: {
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+  },
+  errorValue: {
+    color: theme.colors.error,
+  },
+  notesContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  noteText: {
+    position: 'absolute',
+    fontSize: 10,
+    textAlign: 'center',
+    lineHeight: 18,
+    color: theme.colors.textSecondary,
+  },
+});
+
+export default SudokuCell;
