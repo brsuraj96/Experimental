@@ -249,6 +249,23 @@ const server = http.createServer(async (req, res) => {
     }
   }
   
+  // Handle webpack bundled files
+  if (pathname === '/bundle.js') {
+    const bundlePath = path.join(__dirname, 'dist', 'bundle.js');
+    if (fs.existsSync(bundlePath)) {
+      fs.readFile(bundlePath, (err, data) => {
+        if (err) {
+          res.writeHead(500);
+          res.end('Error loading bundle.js');
+          return;
+        }
+        res.writeHead(200, { 'Content-Type': 'application/javascript' });
+        res.end(data);
+      });
+      return;
+    }
+  }
+  
   // Handle root path
   if (pathname === '/' || pathname === '/index.html') {
     const htmlPath = path.join(__dirname, 'web', 'index.html');

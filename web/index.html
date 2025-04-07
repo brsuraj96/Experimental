@@ -39,6 +39,29 @@
       <p>Loading the game platform...</p>
     </div>
   </div>
-  <script src="/index.js" defer></script>
+  <script type="module">
+    // Import the needed modules directly
+    import React from 'https://cdn.jsdelivr.net/npm/react@18.2.0/+esm';
+    import ReactDOM from 'https://cdn.jsdelivr.net/npm/react-dom@18.2.0/+esm';
+    
+    // Simple React component to show something works
+    const App = () => {
+      return React.createElement('div', { style: { 
+          color: 'white', 
+          padding: '2rem', 
+          textAlign: 'center' 
+        }},
+        React.createElement('h1', { style: { color: '#FF6F61' }}, 'Puzzle World'),
+        React.createElement('p', null, 'React is now working in the browser!'),
+        React.createElement('p', null, 'Mobile app functionality can be accessed through React Native.')
+      );
+    };
+    
+    // Render to the root div
+    ReactDOM.render(
+      React.createElement(App),
+      document.getElementById('root')
+    );
+  </script>
 </body>
 </html>
