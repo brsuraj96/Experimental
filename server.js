@@ -315,6 +315,23 @@ const server = http.createServer(async (req, res) => {
     }
   }
   
+  // Handle Slide Tiles Demo page
+  if (pathname === '/slide-tiles' || pathname === '/slide-tiles.html') {
+    const slideTilesPath = path.join(__dirname, 'web', 'slide-tiles.html');
+    if (fs.existsSync(slideTilesPath)) {
+      fs.readFile(slideTilesPath, (err, data) => {
+        if (err) {
+          res.writeHead(500);
+          res.end('Error loading Slide Tiles demo page');
+          return;
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(data);
+      });
+      return;
+    }
+  }
+  
   // Handle webpack bundled files
   if (pathname === '/bundle.js') {
     const bundlePath = path.join(__dirname, 'dist', 'bundle.js');
@@ -673,7 +690,7 @@ const server = http.createServer(async (req, res) => {
     global.wss = new WebSocketServer({ server, path: '/ws' });
     
     // Add broadcast functionality to WebSocketServer
-    global.global.wss.broadcast = function(data) {
+    global.wss.broadcast = function(data) {
       if (!this.clients) return;
       
       this.clients.forEach((client) => {
@@ -684,7 +701,7 @@ const server = http.createServer(async (req, res) => {
     };
 
     // Track connected clients
-    global.global.wss.on('connection', (ws) => {
+    global.wss.on('connection', (ws) => {
       console.log('WebSocket client connected');
       
       // Send welcome message to new client
@@ -692,7 +709,7 @@ const server = http.createServer(async (req, res) => {
         type: 'welcome', 
         data: { 
           message: 'Connected to Puzzle World WebSocket Server',
-          clientCount: global.global.wss.clients.size,
+          clientCount: global.wss.clients.size,
           time: new Date().toISOString()
         } 
       }));

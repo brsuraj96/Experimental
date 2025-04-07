@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Puzzle World - Slide Tiles Demo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #1E1E2F;
+      color: white;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      text-align: center;
+    }
+    header {
+      margin-bottom: 2rem;
+    }
+    h1 {
+      color: #FF6F61;
+      margin: 0;
+    }
+    .subtitle {
+      color: #BBBBBB;
+    }
+    .game-board {
+      display: inline-grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 8px;
+      margin: 2rem 0;
+    }
+    .tile {
+      background-color: #4DD0E1;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s, background-color 0.2s;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .tile:hover {
+      transform: scale(1.05);
+    }
+    .tile-empty {
+      background-color: transparent;
+      box-shadow: none;
+      cursor: default;
+    }
+    .controls {
+      margin-top: 2rem;
+    }
+    .btn {
+      background-color: #FF6F61;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      margin: 0 0.5rem;
+    }
+    .btn:hover {
+      background-color: #E05A4D;
+    }
+    .btn-secondary {
+      background-color: #4DD0E1;
+    }
+    .btn-secondary:hover {
+      background-color: #3CB0C1;
+    }
+    .stats {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background-color: #2A2A40;
+      border-radius: 8px;
+      display: inline-block;
+    }
+    .stats span {
+      margin: 0 1rem;
+    }
+    .difficulty {
+      margin-bottom: 1.5rem;
+    }
+    .difficulty button {
+      background-color: #2A2A40;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      margin: 0 0.5rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .difficulty button.active {
+      background-color: #FF6F61;
+    }
+    .completed {
+      background-color: #81C784;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1.5rem;
+      animation: fadeIn 1s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .home-link {
+      margin-top: 2rem;
+      display: block;
+      color: #4DD0E1;
+      text-decoration: none;
+    }
+    .home-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Slide Tiles</h1>
+      <p class="subtitle">Arrange the tiles in numerical order</p>
+    </header>
+    
+    <div class="difficulty">
+      <button class="active" data-size="3">Easy (3×3)</button>
+      <button data-size="4">Medium (4×4)</button>
+      <button data-size="5">Hard (5×5)</button>
+    </div>
+    
+    <div id="game-board" class="game-board"></div>
+    
+    <div id="completed" style="display: none;" class="completed">
+      <h2>Puzzle Completed! 🎉</h2>
+      <p>Congratulations, you've arranged all the tiles in order!</p>
+    </div>
+    
+    <div class="stats">
+      <span>Moves: <strong id="moves-counter">0</strong></span>
+      <span>Time: <strong id="time-counter">00:00</strong></span>
+    </div>
+    
+    <div class="controls">
+      <button id="new-game-btn" class="btn">New Game</button>
+      <button id="hint-btn" class="btn btn-secondary">Hint</button>
+    </div>
+    
+    <a href="/" class="home-link">← Back to Home</a>
+  </div>
+  
+  <script>
+    // Game state
+    let boardSize = 3;
+    let tiles = [];
+    let emptyPos = { row: boardSize - 1, col: boardSize - 1 };
+    let moves = 0;
+    let timer = 0;
+    let timerInterval = null;
+    let isComplete = false;
+    
+    // DOM elements
+    const boardElement = document.getElementById('game-board');
+    const movesCounter = document.getElementById('moves-counter');
+    const timeCounter = document.getElementById('time-counter');
+    const newGameBtn = document.getElementById('new-game-btn');
+    const hintBtn = document.getElementById('hint-btn');
+    const completedMessage = document.getElementById('completed');
+    const difficultyButtons = document.querySelectorAll('.difficulty button');
+    
+    // Initialize game
+    initializeGame();
+    
+    // Set up event listeners
+    newGameBtn.addEventListener('click', () => {
+      resetGame();
+      initializeGame();
+    });
+    
+    hintBtn.addEventListener('click', showHint);
+    
+    difficultyButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        // Update active button
+        difficultyButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        // Set new board size
+        boardSize = parseInt(button.getAttribute('data-size'));
+        resetGame();
+        initializeGame();
+      });
+    });
+    
+    function initializeGame() {
+      // Create shuffled tiles
+      tiles = createShuffledTiles();
+      
+      // Update grid layout
+      boardElement.style.gridTemplateColumns = `repeat(${boardSize}, 100px)`;
+      boardElement.style.gridTemplateRows = `repeat(${boardSize}, 100px)`;
+      
+      // Render board
+      renderBoard();
+      
+      // Start timer
+      startTimer();
+      
+      // Reset completion state
+      isComplete = false;
+      completedMessage.style.display = 'none';
+    }
+    
+    function createShuffledTiles() {
+      // Create array from 1 to boardSize^2 - 1 (last position is empty)
+      const numbers = Array.from(
+        { length: boardSize * boardSize - 1 },
+        (_, i) => i + 1
+      );
+      numbers.push(0); // Add empty tile (represented by 0)
+      
+      // Shuffle numbers (ensuring it's solvable)
+      do {
+        shuffleArray(numbers);
+      } while (!isSolvable(numbers));
+      
+      // Convert flat array to 2D grid
+      const grid = [];
+      let index = 0;
+      for (let row = 0; row < boardSize; row++) {
+        const rowArray = [];
+        for (let col = 0; col < boardSize; col++) {
+          rowArray.push(numbers[index++]);
+          
+          // Track empty position
+          if (numbers[index - 1] === 0) {
+            emptyPos = { row, col };
+          }
+        }
+        grid.push(rowArray);
+      }
+      
+      return grid;
+    }
+    
+    function renderBoard() {
+      // Clear board
+      boardElement.innerHTML = '';
+      
+      // Add tiles
+      for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+          const value = tiles[row][col];
+          const tile = document.createElement('div');
+          
+          if (value === 0) {
+            // Empty tile
+            tile.className = 'tile tile-empty';
+          } else {
+            tile.className = 'tile';
+            tile.textContent = value;
+            
+            // Add click handler
+            tile.addEventListener('click', () => {
+              handleTileClick(row, col);
+            });
+          }
+          
+          boardElement.appendChild(tile);
+        }
+      }
+    }
+    
+    function handleTileClick(row, col) {
+      // Check if the game is complete
+      if (isComplete) return;
+      
+      // Check if the tile is adjacent to the empty position
+      if (isAdjacent(row, col, emptyPos.row, emptyPos.col)) {
+        // Swap tile with empty position
+        tiles[emptyPos.row][emptyPos.col] = tiles[row][col];
+        tiles[row][col] = 0;
+        
+        // Update empty position
+        emptyPos = { row, col };
+        
+        // Update moves counter
+        moves++;
+        movesCounter.textContent = moves;
+        
+        // Render updated board
+        renderBoard();
+        
+        // Check if the puzzle is complete
+        if (isPuzzleComplete()) {
+          completeGame();
+        }
+      }
+    }
+    
+    function isAdjacent(row1, col1, row2, col2) {
+      // Check if two positions are adjacent (horizontally or vertically)
+      return (
+        (Math.abs(row1 - row2) === 1 && col1 === col2) ||
+        (Math.abs(col1 - col2) === 1 && row1 === row2)
+      );
+    }
+    
+    function isPuzzleComplete() {
+      // Check if all tiles are in correct position (1 to n in row-major order)
+      let expectedValue = 1;
+      
+      for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+          // Skip the last position (should be empty)
+          if (row === boardSize - 1 && col === boardSize - 1) {
+            return tiles[row][col] === 0;
+          }
+          
+          if (tiles[row][col] !== expectedValue) {
+            return false;
+          }
+          
+          expectedValue++;
+        }
+      }
+      
+      return true;
+    }
+    
+    function completeGame() {
+      // Stop timer
+      clearInterval(timerInterval);
+      
+      // Update state
+      isComplete = true;
+      
+      // Show completion message
+      completedMessage.style.display = 'block';
+      
+      // Send game completion to server
+      sendGameCompletion();
+    }
+    
+    function sendGameCompletion() {
+      // Map board size to difficulty
+      const difficultyMap = {
+        3: 'Easy',
+        4: 'Medium',
+        5: 'Hard'
+      };
+      
+      // Create session data
+      const sessionData = {
+        userId: 1,
+        gameType: 'Slide Tiles',
+        difficulty: difficultyMap[boardSize],
+        moves: moves,
+        timeTaken: timer,
+        completed: true
+      };
+      
+      // Send to server via API
+      fetch('/api/session/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(sessionData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Game session added:', data);
+      })
+      .catch(error => {
+        console.error('Error adding game session:', error);
+      });
+    }
+    
+    function resetGame() {
+      // Reset state
+      moves = 0;
+      timer = 0;
+      isComplete = false;
+      
+      // Update UI
+      movesCounter.textContent = moves;
+      timeCounter.textContent = '00:00';
+      completedMessage.style.display = 'none';
+      
+      // Clear timer
+      clearInterval(timerInterval);
+    }
+    
+    function startTimer() {
+      // Clear existing timer
+      clearInterval(timerInterval);
+      
+      // Reset timer value
+      timer = 0;
+      timeCounter.textContent = '00:00';
+      
+      // Start new timer
+      timerInterval = setInterval(() => {
+        timer++;
+        const minutes = Math.floor(timer / 60);
+        const seconds = timer % 60;
+        timeCounter.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }, 1000);
+    }
+    
+    function showHint() {
+      // Find a valid move to help the player
+      const validMoves = [];
+      
+      // Check all four directions
+      const directions = [
+        { row: -1, col: 0 }, // Up
+        { row: 1, col: 0 },  // Down
+        { row: 0, col: -1 }, // Left
+        { row: 0, col: 1 }   // Right
+      ];
+      
+      for (const direction of directions) {
+        const newRow = emptyPos.row + direction.row;
+        const newCol = emptyPos.col + direction.col;
+        
+        // Check if the position is valid
+        if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize) {
+          validMoves.push({ row: newRow, col: newCol });
+        }
+      }
+      
+      // Get a random valid move
+      if (validMoves.length > 0) {
+        const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+        
+        // Highlight the tile
+        const tileIndex = randomMove.row * boardSize + randomMove.col;
+        const tileElement = boardElement.children[tileIndex];
+        
+        // Add highlight animation
+        const originalColor = tileElement.style.backgroundColor;
+        tileElement.style.backgroundColor = '#FF6F61';
+        
+        // Reset after a delay
+        setTimeout(() => {
+          tileElement.style.backgroundColor = originalColor;
+        }, 1000);
+      }
+    }
+    
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+    
+    function isSolvable(puzzle) {
+      // For a puzzle to be solvable:
+      // 1. If the grid width is odd, the number of inversions must be even
+      // 2. If the grid width is even, the number of inversions + row of empty tile (from bottom) must be odd
+      
+      // Count inversions
+      let inversions = 0;
+      const flatPuzzle = [...puzzle]; // Clone the array
+      
+      // Find empty position
+      const emptyIndex = flatPuzzle.indexOf(0);
+      const emptyRow = Math.floor(emptyIndex / boardSize);
+      
+      // Remove empty tile for inversion counting
+      flatPuzzle.splice(emptyIndex, 1);
+      
+      for (let i = 0; i < flatPuzzle.length; i++) {
+        for (let j = i + 1; j < flatPuzzle.length; j++) {
+          if (flatPuzzle[i] > flatPuzzle[j]) {
+            inversions++;
+          }
+        }
+      }
+      
+      // Apply solvability rules
+      if (boardSize % 2 === 1) {
+        // Odd grid width - inversions must be even
+        return inversions % 2 === 0;
+      } else {
+        // Even grid width - (inversions + row of empty from bottom) must be odd
+        const emptyRowFromBottom = boardSize - emptyRow;
+        return (inversions + emptyRowFromBottom) % 2 === 1;
+      }
+    }
+  </script>
+</body>
+</html>
