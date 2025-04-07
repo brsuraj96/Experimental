@@ -156,8 +156,8 @@ const apiRoutes = {
           }
 
           // Broadcast progress update to all connected WebSocket clients
-          if (wss && typeof wss.broadcast === 'function') {
-            wss.broadcast({
+          if (global.wss && typeof global.wss.broadcast === 'function') {
+            global.wss.broadcast({
               type: 'progress_update',
               data: {
                 userId,
@@ -222,8 +222,8 @@ const apiRoutes = {
           );
           
           // Broadcast game session to all connected WebSocket clients
-          if (wss && typeof wss.broadcast === 'function') {
-            wss.broadcast({
+          if (global.wss && typeof global.wss.broadcast === 'function') {
+            global.wss.broadcast({
               type: 'game_session',
               data: {
                 ...rows[0],
@@ -670,10 +670,10 @@ const server = http.createServer(async (req, res) => {
     }
     
     // Set up WebSocket server for real-time updates
-    const wss = new WebSocketServer({ server, path: '/ws' });
+    global.wss = new WebSocketServer({ server, path: '/ws' });
     
     // Add broadcast functionality to WebSocketServer
-    wss.broadcast = function(data) {
+    global.global.wss.broadcast = function(data) {
       if (!this.clients) return;
       
       this.clients.forEach((client) => {
@@ -684,7 +684,7 @@ const server = http.createServer(async (req, res) => {
     };
 
     // Track connected clients
-    wss.on('connection', (ws) => {
+    global.global.wss.on('connection', (ws) => {
       console.log('WebSocket client connected');
       
       // Send welcome message to new client
@@ -692,7 +692,7 @@ const server = http.createServer(async (req, res) => {
         type: 'welcome', 
         data: { 
           message: 'Connected to Puzzle World WebSocket Server',
-          clientCount: wss.clients.size,
+          clientCount: global.global.wss.clients.size,
           time: new Date().toISOString()
         } 
       }));
@@ -708,7 +708,7 @@ const server = http.createServer(async (req, res) => {
           
           // If the message is a game update, broadcast to all connected clients
           if (data.type === 'game_update') {
-            wss.broadcast({
+            global.wss.broadcast({
               type: 'game_update',
               data: data.data
             });
