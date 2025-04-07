@@ -12,56 +12,137 @@
       background-color: #1E1E2F;
       color: white;
     }
-    #root {
-      display: flex;
-      height: 100vh;
-      width: 100vw;
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
     }
-    .loader {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    h1 {
+      color: #FF6F61;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: #BBBBBB;
+      margin-top: 0;
+    }
+    .card {
+      background-color: #2A2A40;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       text-align: center;
     }
-    .loader h1 {
-      color: #FF6F61;
-    }
-    .loader p {
+    .card h2 {
       color: #4DD0E1;
+      margin-top: 0;
+    }
+    .card p {
+      margin-bottom: 1.5rem;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #FF6F61;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      text-decoration: none;
+      margin: 0.5rem;
+      transition: transform 0.2s, background-color 0.2s;
+    }
+    .btn:hover {
+      background-color: #E05A4D;
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background-color: #4DD0E1;
+    }
+    .btn-secondary:hover {
+      background-color: #3CBECF;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    .feature {
+      background-color: #2A2A40;
+      padding: 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    .feature h3 {
+      margin-top: 0;
+      color: #4DD0E1;
+    }
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      color: #BBBBBB;
+      padding: 1rem;
     }
   </style>
 </head>
 <body>
-  <div id="root">
-    <div class="loader">
+  <div class="container">
+    <header>
       <h1>Puzzle World</h1>
-      <p>Loading the game platform...</p>
+      <p class="subtitle">A multi-game puzzle platform for Android</p>
+    </header>
+    
+    <div class="card">
+      <h2>Access the Application</h2>
+      <p>Puzzle World is primarily a mobile app, but you can access some features through the web interface.</p>
+      <a href="/websocket-test" class="btn">Try WebSocket Demo</a>
     </div>
+    
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🧩</div>
+        <h3>Multiple Games</h3>
+        <p>Play various puzzle games including Sudoku, Slide Tiles, and Flow Free.</p>
+      </div>
+      
+      <div class="feature">
+        <div class="feature-icon">🔄</div>
+        <h3>Real-time Updates</h3>
+        <p>See game completions from other players in real-time with WebSocket technology.</p>
+      </div>
+      
+      <div class="feature">
+        <div class="feature-icon">📊</div>
+        <h3>Progress Tracking</h3>
+        <p>Track your game progress and statistics across different devices.</p>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>API Documentation</h2>
+      <p>Explore the available API endpoints for the Puzzle World platform:</p>
+      <div style="text-align: left; max-width: 500px; margin: 0 auto;">
+        <p><code>GET /api/db/status</code> - Check database connection</p>
+        <p><code>GET /api/user</code> - Get current user information</p>
+        <p><code>GET /api/progress?userId=1</code> - Get game progress</p>
+        <p><code>POST /api/progress/update</code> - Update game progress</p>
+        <p><code>POST /api/session/add</code> - Add a new game session</p>
+        <p><code>WebSocket /ws</code> - Real-time game updates</p>
+      </div>
+    </div>
+    
+    <footer>
+      <p>Puzzle World &copy; 2025 | A React Native Multi-Game Platform</p>
+    </footer>
   </div>
-  <script type="module">
-    // Import the needed modules directly
-    import React from 'https://cdn.jsdelivr.net/npm/react@18.2.0/+esm';
-    import ReactDOM from 'https://cdn.jsdelivr.net/npm/react-dom@18.2.0/+esm';
-    
-    // Simple React component to show something works
-    const App = () => {
-      return React.createElement('div', { style: { 
-          color: 'white', 
-          padding: '2rem', 
-          textAlign: 'center' 
-        }},
-        React.createElement('h1', { style: { color: '#FF6F61' }}, 'Puzzle World'),
-        React.createElement('p', null, 'React is now working in the browser!'),
-        React.createElement('p', null, 'Mobile app functionality can be accessed through React Native.')
-      );
-    };
-    
-    // Render to the root div
-    ReactDOM.render(
-      React.createElement(App),
-      document.getElementById('root')
-    );
-  </script>
 </body>
 </html>

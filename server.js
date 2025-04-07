@@ -298,6 +298,23 @@ const server = http.createServer(async (req, res) => {
     }
   }
   
+  // Handle WebSocket test page
+  if (pathname === '/websocket-test' || pathname === '/websocket-test.html') {
+    const testPagePath = path.join(__dirname, 'web', 'websocket-test.html');
+    if (fs.existsSync(testPagePath)) {
+      fs.readFile(testPagePath, (err, data) => {
+        if (err) {
+          res.writeHead(500);
+          res.end('Error loading WebSocket test page');
+          return;
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(data);
+      });
+      return;
+    }
+  }
+  
   // Handle webpack bundled files
   if (pathname === '/bundle.js') {
     const bundlePath = path.join(__dirname, 'dist', 'bundle.js');

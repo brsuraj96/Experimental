@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Puzzle World - WebSocket Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #1E1E2F;
+      color: white;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      color: #FF6F61;
+      margin: 0;
+    }
+    h2 {
+      color: #4DD0E1;
+      margin-top: 1.5rem;
+    }
+    .subtitle {
+      color: #BBBBBB;
+    }
+    .card {
+      background-color: #2A2A40;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .game-item {
+      background-color: #353549;
+      border-radius: 8px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .game-item:hover {
+      transform: translateY(-5px);
+    }
+    .game-item h3 {
+      margin-top: 0;
+      color: white;
+    }
+    .game-color-bar {
+      height: 8px;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .activity-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .activity-item {
+      border-bottom: 1px solid #3A3A50;
+      padding: 0.75rem 0;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    .activity-header {
+      display: flex;
+      justify-content: space-between;
+    }
+    .activity-game {
+      font-weight: bold;
+      color: #FF6F61;
+    }
+    .activity-time {
+      color: #BBBBBB;
+      font-size: 0.8rem;
+    }
+    .activity-details {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+    }
+    .difficulty {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      margin-right: 0.5rem;
+      font-size: 0.8rem;
+      background-color: #353549;
+    }
+    .stats {
+      color: #BBBBBB;
+    }
+    .status {
+      font-weight: bold;
+    }
+    .status-completed {
+      color: #81C784;
+    }
+    .status-failed {
+      color: #EF5350;
+    }
+    .connection-status {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+    }
+    .connected {
+      background-color: #81C784;
+    }
+    .disconnected {
+      background-color: #EF5350;
+    }
+    .btn {
+      background-color: #FF6F61;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .btn:hover {
+      background-color: #E05A4D;
+    }
+    .btn-secondary {
+      background-color: #4DD0E1;
+    }
+    .btn-secondary:hover {
+      background-color: #3CB0C1;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Puzzle World</h1>
+      <p class="subtitle">WebSocket Demo Page</p>
+    </header>
+    
+    <div class="card">
+      <div id="connection-status">
+        <h2>WebSocket Connection</h2>
+        <p>
+          <span id="connection-indicator" class="connection-status disconnected"></span>
+          <span id="connection-text">Connecting...</span>
+        </p>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>Simulate Game Completion</h2>
+      <p>Click a game to simulate completing it:</p>
+      
+      <div class="game-grid">
+        <div class="game-item" data-game="Sudoku">
+          <div class="game-color-bar" style="background-color: #FF6F61;"></div>
+          <h3>Sudoku</h3>
+          <p>Complete a number puzzle</p>
+        </div>
+        
+        <div class="game-item" data-game="Slide Tiles">
+          <div class="game-color-bar" style="background-color: #4DD0E1;"></div>
+          <h3>Slide Tiles</h3>
+          <p>Solve a tile puzzle</p>
+        </div>
+        
+        <div class="game-item" data-game="Flow Free">
+          <div class="game-color-bar" style="background-color: #81C784;"></div>
+          <h3>Flow Free</h3>
+          <p>Connect matching colors</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>Recent Activity</h2>
+      <div id="activity-list" class="activity-list">
+        <p id="no-activity">Activity will appear here as players complete games</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // WebSocket Connection
+    let socket = null;
+    const activities = [];
+    const MAX_ACTIVITIES = 10;
+    
+    function connectWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      
+      try {
+        socket = new WebSocket(wsUrl);
+        
+        socket.onopen = function() {
+          console.log('WebSocket connected');
+          updateConnectionStatus(true);
+        };
+        
+        socket.onmessage = function(event) {
+          const data = JSON.parse(event.data);
+          console.log('Received message:', data);
+          
+          if (data.type === 'game_session' || data.type === 'progress_update') {
+            addActivity(data.data);
+          } else if (data.type === 'welcome') {
+            console.log('Welcome message:', data.data);
+          }
+        };
+        
+        socket.onclose = function() {
+          console.log('WebSocket closed');
+          updateConnectionStatus(false);
+          
+          // Try to reconnect after 5 seconds
+          setTimeout(connectWebSocket, 5000);
+        };
+        
+        socket.onerror = function(error) {
+          console.error('WebSocket error:', error);
+          updateConnectionStatus(false);
+        };
+      } catch (error) {
+        console.error('Failed to connect to WebSocket:', error);
+        updateConnectionStatus(false);
+      }
+    }
+    
+    function updateConnectionStatus(connected) {
+      const indicator = document.getElementById('connection-indicator');
+      const text = document.getElementById('connection-text');
+      
+      if (connected) {
+        indicator.className = 'connection-status connected';
+        text.textContent = 'Connected to WebSocket server';
+      } else {
+        indicator.className = 'connection-status disconnected';
+        text.textContent = 'Disconnected (trying to reconnect...)';
+      }
+    }
+    
+    function addActivity(data) {
+      const activityList = document.getElementById('activity-list');
+      const noActivity = document.getElementById('no-activity');
+      
+      if (noActivity) {
+        noActivity.remove();
+      }
+      
+      // Create activity element
+      const activity = document.createElement('div');
+      activity.className = 'activity-item';
+      
+      const completedText = data.completed ? '✓ Completed' : '× Gave up';
+      const statusClass = data.completed ? 'status-completed' : 'status-failed';
+      const difficulty = data.difficulty || 'Easy';
+      const gameType = data.game_type || data.gameType;
+      const moves = data.moves || Math.floor(Math.random() * 30) + 10;
+      const timeTaken = data.time_taken || Math.floor(Math.random() * 300) + 60;
+      
+      // Format time as MM:SS
+      const minutes = Math.floor(timeTaken / 60);
+      const seconds = timeTaken % 60;
+      const formattedTime = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      
+      activity.innerHTML = `
+        <div class="activity-header">
+          <div class="activity-game">${gameType}</div>
+          <div class="activity-time">Just now</div>
+        </div>
+        <div class="activity-details">
+          <span class="difficulty">${difficulty}</span>
+          <span class="stats">${moves} moves • ${formattedTime}</span>
+          <div class="status ${statusClass}">${completedText}</div>
+        </div>
+      `;
+      
+      // Add to the beginning of the list
+      activityList.insertBefore(activity, activityList.firstChild);
+      
+      // Limit number of activities shown
+      activities.push(activity);
+      if (activities.length > MAX_ACTIVITIES) {
+        const oldestActivity = activities.shift();
+        if (oldestActivity && oldestActivity.parentNode) {
+          oldestActivity.parentNode.removeChild(oldestActivity);
+        }
+      }
+    }
+    
+    function simulateGameCompletion(gameType) {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        alert('WebSocket is not connected. Please wait for connection.');
+        return;
+      }
+      
+      // Create game session data
+      const difficulties = ['Easy', 'Medium', 'Hard'];
+      const difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
+      const moves = Math.floor(Math.random() * 30) + 10;
+      const timeTaken = Math.floor(Math.random() * 300) + 60;
+      
+      const sessionData = {
+        userId: 1,
+        gameType: gameType,
+        difficulty: difficulty,
+        moves: moves,
+        timeTaken: timeTaken,
+        completed: Math.random() > 0.2 // 80% chance of completion
+      };
+      
+      // Send to server via API
+      fetch('/api/session/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(sessionData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Game session added:', data);
+      })
+      .catch(error => {
+        console.error('Error adding game session:', error);
+        // Still add to UI even if API fails
+        addActivity(sessionData);
+      });
+    }
+    
+    // Set up game simulation click handlers
+    document.querySelectorAll('.game-item').forEach(item => {
+      item.addEventListener('click', function() {
+        const gameType = this.getAttribute('data-game');
+        simulateGameCompletion(gameType);
+      });
+    });
+    
+    // Connect WebSocket when page loads
+    document.addEventListener('DOMContentLoaded', connectWebSocket);
+  </script>
+</body>
+</html>
