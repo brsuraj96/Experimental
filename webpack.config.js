@@ -1,33 +1,55 @@
-const createExpoWebpackConfigAsync = require('@expo/webpack-config');
+// Simple configuration for React Native Web with TypeScript support
 
-module.exports = async function (env, argv) {
-  const config = await createExpoWebpackConfigAsync(
-    {
-      ...env,
-      babel: {
-        dangerouslyAddModulePathsToTranspile: [
-          // Add any modules that need to be transpiled
-          'react-native-reanimated',
-          '@react-navigation',
-        ],
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+module.exports = {
+  mode: 'development',
+  entry: './index.js',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'bundle.js',
+  },
+  devServer: {
+    static: './dist',
+    port: 5000,
+    historyApiFallback: true,
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(js|jsx|ts|tsx)$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: [
+              ['@babel/preset-env', { targets: { node: 'current' } }],
+              '@babel/preset-react',
+              '@babel/preset-typescript',
+            ],
+            plugins: [
+              '@babel/plugin-transform-runtime',
+              'react-native-web',
+            ],
+          },
+        },
       },
+      {
+        test: /\.(png|jpe?g|gif|svg|ttf|woff|woff2)$/i,
+        type: 'asset/resource',
+      },
+    ],
+  },
+  resolve: {
+    extensions: ['.web.js', '.js', '.web.jsx', '.jsx', '.web.ts', '.ts', '.web.tsx', '.tsx'],
+    alias: {
+      'react-native$': 'react-native-web',
     },
-    argv
-  );
-
-  // Customize the config before returning it
-  if (config.module && config.module.rules) {
-    // Find and remove the problematic filter
-    config.module.rules = config.module.rules.filter(rule => {
-      if (rule.oneOf) {
-        rule.oneOf = rule.oneOf.filter(oneOf => {
-          // Remove the specific rule causing the "Unrecognised filter type - 208" error
-          return oneOf.parser && oneOf.parser.requireEnsure !== false;
-        });
-      }
-      return true;
-    });
-  }
-
-  return config;
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, './web/index.html'),
+    }),
+  ],
 };
