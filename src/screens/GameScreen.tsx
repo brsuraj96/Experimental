@@ -15,6 +15,7 @@ import Timer from '../components/common/Timer';
 import SudokuGame from '../components/games/sudoku/SudokuGame';
 import SlideTilesGame from '../components/games/slideTiles/SlideTilesGame';
 import FlowFreeGame from '../components/games/flowFree/FlowFreeGame';
+import WaterFlowGame from '../components/games/waterFlow/WaterFlowGame';
 import useOrientation from '../hooks/useOrientation';
 import useSound from '../hooks/useSound';
 
@@ -109,6 +110,15 @@ const GameScreen = () => {
       case GameType.FLOW_FREE:
         return (
           <FlowFreeGame
+            difficulty={difficulty}
+            onMove={handleAddMove}
+            onComplete={() => setIsGameCompleted(true)}
+            orientation={orientation}
+          />
+        );
+      case GameType.WATER_FLOW:
+        return (
+          <WaterFlowGame
             difficulty={difficulty}
             onMove={handleAddMove}
             onComplete={() => setIsGameCompleted(true)}

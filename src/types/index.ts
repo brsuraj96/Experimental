@@ -82,6 +82,36 @@ export interface FlowLevel {
   endpoints: {row: number, col: number, color: FlowColor}[];
 }
 
+// Water Flow Puzzle Types
+
+export enum PipeType {
+  STRAIGHT = 'straight',
+  CORNER = 'corner',
+  T_SHAPE = 't-shape',
+  CROSS = 'cross',
+  SOURCE = 'source',
+  DESTINATION = 'destination',
+  EMPTY = 'empty'
+}
+
+export interface PipeCell {
+  type: PipeType;
+  rotation: 0 | 90 | 180 | 270; // Rotation in degrees
+  isFixed: boolean;
+  isConnected?: boolean; // Used for checking if pipe is part of the solution
+  row: number;
+  col: number;
+}
+
+export type WaterFlowBoard = PipeCell[][];
+
+export interface WaterFlowLevel {
+  size: number;
+  board: WaterFlowBoard;
+  sourcePosition: { row: number, col: number };
+  destinationPosition: { row: number, col: number };
+}
+
 // Game progress
 export interface GameProgress {
   [GameType.SUDOKU]: {
@@ -95,6 +125,11 @@ export interface GameProgress {
     [Difficulty.HARD]: number;
   };
   [GameType.FLOW_FREE]: {
+    [Difficulty.EASY]: number;
+    [Difficulty.MEDIUM]: number;
+    [Difficulty.HARD]: number;
+  };
+  [GameType.WATER_FLOW]: {
     [Difficulty.EASY]: number;
     [Difficulty.MEDIUM]: number;
     [Difficulty.HARD]: number;

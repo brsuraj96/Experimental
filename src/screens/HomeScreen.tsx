@@ -82,7 +82,7 @@ const games: GameInfo[] = [
     title: 'Water Flow',
     description: 'Guide water through pipes',
     color: '#00BCD4',
-    implemented: false,
+    implemented: true,
   },
   {
     id: GameType.TRIVIA,

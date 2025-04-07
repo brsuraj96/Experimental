@@ -1,93 +1,52 @@
 import React from 'react';
-import Svg, { Path, G, Circle } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 
 interface IconProps {
   size?: number;
   color?: string;
 }
 
-const IconWaterFlow: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
+const IconWaterFlow: React.FC<IconProps> = ({ size = 24, color = '#00BCD4' }) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <G>
-        {/* Border */}
-        <Path
-          d="M3 3H21V21H3V3Z"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-        
-        {/* Water source */}
-        <Circle cx="6" cy="6" r="2" fill="#4DD0E1" />
-        
-        {/* Pipes */}
-        <Path
-          d="M6 8V12H10V16H14V12H18V17"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-        
-        {/* Curved pipe sections */}
-        <Path
-          d="M6 12C6 12 6 12 8 12"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          fill="none"
-        />
-        <Path
-          d="M10 16C10 16 10 16 12 16"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          fill="none"
-        />
-        <Path
-          d="M14 12C14 12 14 12 16 12"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          fill="none"
-        />
-        
-        {/* Water droplets */}
-        <Path
-          d="M6 8.5L6.5 9L5.5 9L6 8.5Z"
-          fill="#4DD0E1"
-        />
-        <Path
-          d="M10 12.5L10.5 13L9.5 13L10 12.5Z"
-          fill="#4DD0E1"
-        />
-        <Path
-          d="M14 14.5L14.5 15L13.5 15L14 14.5Z"
-          fill="#4DD0E1"
-        />
-        <Path
-          d="M18 14.5L18.5 15L17.5 15L18 14.5Z"
-          fill="#4DD0E1"
-        />
-        
-        {/* End point */}
-        <Path
-          d="M17 17H19"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-        <Path
-          d="M18 17V19"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      </G>
+      {/* Pipe Elbow Piece */}
+      <Path
+        d="M4 12C4 10.8954 4.89543 10 6 10H10V14H6C4.89543 14 4 13.1046 4 12Z"
+        fill={color}
+        strokeWidth="1"
+        stroke="#FFFFFF"
+        strokeLinecap="round"
+      />
+      <Path
+        d="M10 10V6C10 4.89543 10.8954 4 12 4V4C13.1046 4 14 4.89543 14 6V10H10Z"
+        fill={color}
+        strokeWidth="1"
+        stroke="#FFFFFF"
+        strokeLinecap="round"
+      />
+      
+      {/* Pipe Straight Piece */}
+      <Path
+        d="M14 14H18C19.1046 14 20 13.1046 20 12V12C20 10.8954 19.1046 10 18 10H14V14Z"
+        fill={color}
+        strokeWidth="1"
+        stroke="#FFFFFF"
+        strokeLinecap="round"
+      />
+      
+      {/* Pipe T Piece */}
+      <Path
+        d="M10 14V18C10 19.1046 10.8954 20 12 20V20C13.1046 20 14 19.1046 14 18V14H10Z"
+        fill={color}
+        strokeWidth="1"
+        stroke="#FFFFFF"
+        strokeLinecap="round"
+      />
+      
+      {/* Water Droplet */}
+      <Circle cx="7" cy="12" r="1.5" fill="#FFFFFF" />
+      <Circle cx="10" cy="9" r="1" fill="#FFFFFF" />
+      <Circle cx="13" cy="17" r="1" fill="#FFFFFF" />
     </Svg>
   );
 };

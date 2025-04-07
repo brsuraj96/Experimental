@@ -22,6 +22,11 @@ const defaultProgress: GameProgress = {
     [Difficulty.MEDIUM]: 0,
     [Difficulty.HARD]: 0,
   },
+  [GameType.WATER_FLOW]: {
+    [Difficulty.EASY]: 0,
+    [Difficulty.MEDIUM]: 0,
+    [Difficulty.HARD]: 0,
+  },
 };
 
 // Simple storage abstraction that uses localStorage on web
