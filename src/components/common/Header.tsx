@@ -1,12 +1,13 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Platform,
-} from 'react-native';
-import { theme } from '../../styles/theme';
+  ViewStyle,
+} from "react-native";
+import { theme } from "../../styles/theme";
 
 interface HeaderProps {
   title: string;
@@ -17,6 +18,7 @@ interface HeaderProps {
   onHint?: () => void;
   onUndo?: () => void;
   onReset?: () => void;
+  containerStyle?: ViewStyle;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -28,9 +30,10 @@ const Header: React.FC<HeaderProps> = ({
   onHint,
   onUndo,
   onReset,
+  containerStyle,
 }) => {
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, containerStyle]}>
       <View style={styles.leftContainer}>
         {showBackButton && (
           <TouchableOpacity
@@ -86,30 +89,30 @@ const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 44 : 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: Platform.OS === "ios" ? 44 : 10,
     paddingBottom: 10,
     paddingHorizontal: theme.spacing.medium,
     backgroundColor: theme.colors.backgroundDark,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
   leftContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   rightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   backButton: {
     marginRight: theme.spacing.medium,
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
   },
   subtitle: {
@@ -123,13 +126,13 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     backgroundColor: theme.colors.backgroundLight,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   iconText: {
     fontSize: 20,
     color: theme.colors.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
 

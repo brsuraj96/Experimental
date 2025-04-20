@@ -1,21 +1,28 @@
 // Colors match the specifications from the requirements
 const colors = {
-  background: '#1E1E2F', // Dark, subtle base
-  backgroundDark: '#191925',
-  backgroundLight: '#2A2A40',
-  primary: '#FF6F61', // Playful pinkish red
-  secondary: '#4DD0E1', // Bright cyan
-  success: '#81C784', // Green for wins
-  error: '#EF5350', // Red for invalid moves
-  text: '#FFFFFF',
-  textSecondary: '#AAAABC',
-  gridLines: '#333', // Thin but visible borders
+  background: "#1E1E2F", // Dark, subtle base
+  backgroundDark: "#191925",
+  backgroundLight: "#2A2A40",
+  backgroundMedium: "#252538", // Medium background for cards
+  primary: "#FF6F61", // Playful pinkish red
+  primaryLight: "#FF8B80", // Lighter version of primary
+  secondary: "#4DD0E1", // Bright cyan
+  success: "#81C784", // Green for wins
+  error: "#EF5350", // Red for invalid moves
+  text: "#FFFFFF",
+  textLight: "#FFFFFF", // White text for dark backgrounds
+  textSecondary: "#AAAABC",
+  textDim: "#888899", // Dimmed text
+  gridLines: "#333", // Thin but visible borders
+  border: "#444455", // Border for components
+  cardBackground: "#2A2A40", // Background for cards
+  accent: "#FFEB3B", // Accent color (yellow)
 };
 
 const darkColors = {
   ...colors,
   // Slightly darker variations for dark mode
-  backgroundLight: '#252538',
+  backgroundLight: "#252538",
 };
 
 const spacing = {
