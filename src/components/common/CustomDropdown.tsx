@@ -1,0 +1,157 @@
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+  Modal,
+  TouchableWithoutFeedback,
+  Platform,
+} from "react-native";
+import React, { useCallback, useRef, useState } from "react";
+import { AntDesign } from "@expo/vector-icons";
+import { theme } from "../../styles/theme";
+
+type OptionItem = {
+  value: string;
+  label: string;
+};
+
+interface DropDownProps {
+  data?: OptionItem[];
+  onChange: (item: OptionItem) => void;
+  placeholder?: string;
+}
+
+export default function Dropdown({
+  data,
+  onChange,
+  placeholder,
+}: DropDownProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const toggleExpanded = useCallback(() => setExpanded(!expanded), [expanded]);
+
+  const [value, setValue] = useState("");
+
+  const buttonRef = useRef<View>(null);
+
+  const [top, setTop] = useState(0);
+
+  const onSelect = useCallback((item: OptionItem) => {
+    onChange(item);
+    setValue(item.label);
+    setExpanded(false);
+  }, []);
+  return (
+    <View
+      ref={buttonRef}
+      onLayout={(event) => {
+        const layout = event.nativeEvent.layout;
+        const topOffset = layout.y;
+        const heightOfComponent = layout.height;
+
+        const finalValue =
+          topOffset + heightOfComponent + (Platform.OS === "android" ? -32 : 3);
+
+        setTop(finalValue);
+      }}
+    >
+      <TouchableOpacity
+        style={styles.button}
+        activeOpacity={0.8}
+        onPress={toggleExpanded}
+      >
+        <View style={styles.buttonContent}>
+          <Text style={styles.text}>{value || placeholder}</Text>
+          <AntDesign
+            name={expanded ? "caretup" : "caretdown"}
+            color={theme.colors.text}
+            size={12}
+          />
+        </View>
+      </TouchableOpacity>
+      {expanded ? (
+        <Modal visible={expanded} transparent>
+          <TouchableWithoutFeedback onPress={() => setExpanded(false)}>
+            <View style={styles.backdrop}>
+              <View
+                style={[
+                  styles.options,
+                  {
+                    top: -150,
+                    left: -6,
+                  },
+                ]}
+              >
+                <FlatList
+                  keyExtractor={(item) => item.value}
+                  data={data}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={styles.optionItem}
+                      onPress={() => onSelect(item)}
+                    >
+                      <Text style={styles.optionText}>{item.label}</Text>
+                    </TouchableOpacity>
+                  )}
+                  ItemSeparatorComponent={() => (
+                    <View style={styles.separator} />
+                  )}
+                />
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  backdrop: {
+    padding: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
+  },
+  optionItem: {
+    height: 32,
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  separator: {
+    height: 4,
+  },
+  options: {
+    position: "relative",
+    backgroundColor: theme.colors.backgroundLight,
+    width: 120,
+    padding: 8,
+    borderRadius: 6,
+    maxHeight: 200,
+  },
+  text: {
+    fontSize: 12,
+    color: theme.colors.text,
+  },
+  button: {
+    height: 32,
+    backgroundColor: theme.colors.backgroundLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    justifyContent: "center",
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: 105,
+  },
+  optionText: {
+    fontSize: 12,
+    color: theme.colors.text,
+  },
+});

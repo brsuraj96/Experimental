@@ -2,38 +2,35 @@ import React, { useRef } from "react";
 import {
   View,
   StyleSheet,
-  useWindowDimensions,
+  Dimensions,
   PanResponder,
   findNodeHandle,
   UIManager,
 } from "react-native";
-import { FlowBoard, FlowColor } from "../../../types";
-import FlowFreeCell from "./FlowFreeCell";
+import { WordSearchBoard as WordSearchBoardType } from "../../../types";
 import { theme } from "../../../styles/theme";
+import WordSearchCell from "./WordSearchCell";
 
-interface FlowFreeBoardProps {
-  board: FlowBoard;
-  activeColor: FlowColor | null;
+interface WordSearchBoardProps {
+  board: WordSearchBoardType;
   onCellPress: (row: number, col: number) => void;
-  onCellMove: (row: number, col: number) => void;
+  onCellDrag: (row: number, col: number) => void;
   onCellRelease: () => void;
 }
 
-const FlowFreeBoard: React.FC<FlowFreeBoardProps> = ({
+const WordSearchBoard: React.FC<WordSearchBoardProps> = ({
   board,
-  activeColor,
   onCellPress,
-  onCellMove,
+  onCellDrag,
   onCellRelease,
 }) => {
-  const { width } = useWindowDimensions();
+  const { width } = Dimensions.get("window");
   const boardSize = Math.min(width - 32, 360);
-  const boardRef = useRef<View>(null);
-  const boardMeasurements = useRef({ x: 0, y: 0, width: 0, height: 0 });
-
-  // Calculate grid dimensions
   const gridSize = board.length;
   const cellSize = boardSize / gridSize;
+
+  const boardRef = useRef<View>(null);
+  const boardMeasurements = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
   // Function to convert touch coordinates to grid position
   const touchToGridPosition = (pageX: number, pageY: number) => {
@@ -62,12 +59,13 @@ const FlowFreeBoard: React.FC<FlowFreeBoardProps> = ({
     }
   };
 
-  // Create PanResponder for handling touch gestures
+  // Create PanResponder for handling drag gestures
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt: any, gestureState) => {
+
+      onPanResponderGrant: (evt: any) => {
         const { pageX, pageY } = evt.nativeEvent;
         const { row, col } = touchToGridPosition(pageX, pageY);
 
@@ -75,17 +73,20 @@ const FlowFreeBoard: React.FC<FlowFreeBoardProps> = ({
           onCellPress(row, col);
         }
       },
-      onPanResponderMove: (evt: any, gestureState) => {
+
+      onPanResponderMove: (evt: any) => {
         const { pageX, pageY } = evt.nativeEvent;
         const { row, col } = touchToGridPosition(pageX, pageY);
 
         if (row >= 0 && row < gridSize && col >= 0 && col < gridSize) {
-          onCellMove(row, col);
+          onCellDrag(row, col);
         }
       },
+
       onPanResponderRelease: () => {
         onCellRelease();
       },
+
       onPanResponderTerminate: () => {
         onCellRelease();
       },
@@ -95,6 +96,7 @@ const FlowFreeBoard: React.FC<FlowFreeBoardProps> = ({
   return (
     <View
       ref={boardRef}
+      onLayout={onBoardLayout}
       style={[
         styles.board,
         {
@@ -102,21 +104,21 @@ const FlowFreeBoard: React.FC<FlowFreeBoardProps> = ({
           height: boardSize,
         },
       ]}
-      onLayout={onBoardLayout}
       {...panResponder.panHandlers}
     >
-      {board.map((row, rowIndex) =>
-        row.map((cell, colIndex) => (
-          <FlowFreeCell
-            key={`${rowIndex}-${colIndex}`}
-            cell={cell}
-            row={rowIndex}
-            col={colIndex}
-            size={cellSize}
-            isActive={cell?.color === activeColor}
-          />
-        ))
-      )}
+      <View style={styles.grid}>
+        {board.map((row, rowIndex) => (
+          <View key={`row-${rowIndex}`} style={styles.row}>
+            {row.map((cell, colIndex) => (
+              <WordSearchCell
+                key={`${rowIndex}-${colIndex}`}
+                cell={cell}
+                size={cellSize}
+              />
+            ))}
+          </View>
+        ))}
+      </View>
     </View>
   );
 };
@@ -125,12 +127,20 @@ const styles = StyleSheet.create({
   board: {
     backgroundColor: theme.colors.backgroundLight,
     borderRadius: 12,
-    padding: 2,
-    position: "relative",
+    overflow: "hidden",
+    marginVertical: 10,
     borderWidth: 2,
     borderColor: theme.colors.backgroundDark,
-    overflow: "hidden",
+  },
+  grid: {
+    width: "100%",
+    height: "100%",
+    flexDirection: "column",
+  },
+  row: {
+    flexDirection: "row",
+    flex: 1,
   },
 });
 
-export default FlowFreeBoard;
+export default WordSearchBoard;

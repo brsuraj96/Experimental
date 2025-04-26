@@ -1,32 +1,36 @@
-import React from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, Platform } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import AppNavigator from './src/navigation/AppNavigator';
-import { ThemeProvider } from './src/context/ThemeContext';
-import { GameProvider } from './src/context/GameContext';
-import { WebSocketProvider } from './src/context/WebSocketContext';
-import { theme } from './src/styles/theme';
+import React from "react";
+import { SafeAreaView, StatusBar, StyleSheet, Platform } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+import AppNavigator from "./src/navigation/AppNavigator";
+import { ThemeProvider } from "./src/context/ThemeContext";
+import { GameProvider } from "./src/context/GameContext";
+import { WebSocketProvider } from "./src/context/WebSocketContext";
+import { Provider as PaperProvider } from "react-native-paper";
+import { theme } from "./src/styles/theme";
+import "setimmediate";
 
 const App = () => {
   // Create app content
   const AppContent = () => (
-    <ThemeProvider>
-      <GameProvider>
-        <NavigationContainer>
-          <SafeAreaView style={styles.container}>
-            <StatusBar
-              barStyle="light-content"
-              backgroundColor={theme.colors.background}
-            />
-            <AppNavigator />
-          </SafeAreaView>
-        </NavigationContainer>
-      </GameProvider>
-    </ThemeProvider>
+    <PaperProvider>
+      <ThemeProvider>
+        <GameProvider>
+          <NavigationContainer>
+            <SafeAreaView style={styles.container}>
+              <StatusBar
+                barStyle="light-content"
+                backgroundColor={theme.colors.background}
+              />
+              <AppNavigator />
+            </SafeAreaView>
+          </NavigationContainer>
+        </GameProvider>
+      </ThemeProvider>
+    </PaperProvider>
   );
 
   // Add WebSocketProvider for web platform only
-  if (Platform.OS === 'web') {
+  if (Platform.OS === "web") {
     return (
       <WebSocketProvider>
         <AppContent />

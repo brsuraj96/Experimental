@@ -1,17 +1,18 @@
 // Simple configuration for React Native Web with TypeScript support
 
-const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
+const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const webpack = require("webpack");
 
 module.exports = {
-  mode: 'development',
-  entry: './index.js',
+  mode: "development",
+  entry: "./index.js",
   output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.js',
+    path: path.resolve(__dirname, "dist"),
+    filename: "bundle.js",
   },
   devServer: {
-    static: './dist',
+    static: "./dist",
     port: 5000,
     historyApiFallback: true,
   },
@@ -19,37 +20,42 @@ module.exports = {
     rules: [
       {
         test: /\.(js|jsx|ts|tsx)$/,
-        exclude: /node_modules/,
+        exclude: /node_modules\/(?!react-native)/, // Exclude node_modules EXCEPT react-native
         use: {
-          loader: 'babel-loader',
+          loader: "babel-loader",
           options: {
             presets: [
-              ['@babel/preset-env', { targets: { node: 'current' } }],
-              '@babel/preset-react',
-              '@babel/preset-typescript',
+              ["@babel/preset-env", { targets: { node: "current" } }],
+              "@babel/preset-react",
+              "@babel/preset-typescript",
             ],
-            plugins: [
-              '@babel/plugin-transform-runtime',
-              'react-native-web',
-            ],
+            plugins: ["@babel/plugin-transform-runtime", "react-native-web"],
           },
         },
       },
       {
         test: /\.(png|jpe?g|gif|svg|ttf|woff|woff2)$/i,
-        type: 'asset/resource',
+        type: "asset/resource",
       },
     ],
   },
   resolve: {
-    extensions: ['.web.js', '.js', '.web.jsx', '.jsx', '.web.ts', '.ts', '.web.tsx', '.tsx'],
+    extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
     alias: {
-      'react-native$': 'react-native-web',
+      "react-native$": "react-native-web",
+      // Mock TurboModuleRegistry to avoid errors
+      "react-native/Libraries/TurboModule/TurboModuleRegistry": false,
+    },
+    fallback: {
+      buffer: require.resolve("buffer/"),
     },
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: path.resolve(__dirname, './web/index.html'),
+      template: path.resolve(__dirname, "./web/index.html"),
+    }),
+    new webpack.ProvidePlugin({
+      Buffer: ["buffer", "Buffer"],
     }),
   ],
 };
