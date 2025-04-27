@@ -233,6 +233,7 @@ const GameScreen = () => {
           height: isLandscape ? 60 : 72,
           paddingVertical: isLandscape ? 4 : 10,
         }}
+        showSettings
       />
 
       <View

@@ -13,13 +13,15 @@ import { Picker } from "@react-native-picker/picker";
 import ThemeSelector from "../common/ThemeSelector";
 import { useTheme } from "../../context/ThemeContext";
 import { FontAwesome5 } from "@expo/vector-icons";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "../../types";
 
 interface HeaderProps {
   title: string;
   subtitle?: string;
   showBackButton?: boolean;
   onBack?: () => void;
-  rightComponent?: React.ReactNode;
+  showSettings?: boolean;
   onHint?: () => void;
   onUndo?: () => void;
   onReset?: () => void;
@@ -29,6 +31,7 @@ interface HeaderProps {
   onPause?: () => void;
   onResume?: () => void;
   isPaused?: boolean;
+  navigation?: NavigationProp<RootStackParamList>;
 }
 
 const difficulties: Difficulty[] = [
@@ -42,7 +45,7 @@ const Header: React.FC<HeaderProps> = ({
   subtitle,
   showBackButton = false,
   onBack,
-  rightComponent,
+  showSettings,
   onHint,
   onUndo,
   onReset,
@@ -52,8 +55,10 @@ const Header: React.FC<HeaderProps> = ({
   onPause,
   onResume,
   isPaused = false,
+  navigation: navigationProp,
 }) => {
   const { currentTheme } = useTheme();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(
     (subtitle as Difficulty) || Difficulty.EASY
@@ -355,7 +360,19 @@ const Header: React.FC<HeaderProps> = ({
           </TouchableOpacity>
 
           {showDifficultySelector && renderDifficultySelector()}
-          {rightComponent}
+          {showSettings && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => navigation.navigate("Settings")}
+              hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+            >
+              <FontAwesome5
+                name="cog"
+                size={20}
+                color={currentTheme.colors.text}
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 

@@ -247,4 +247,11 @@ export type RootStackParamList = {
     time: number;
     moves: number;
   };
+  Settings: undefined;
+  Premium: undefined;
+  Statistics: undefined;
+  HowToPlay: undefined;
+  HelpCenter: undefined;
+  About: undefined;
+  Language: undefined;
 };

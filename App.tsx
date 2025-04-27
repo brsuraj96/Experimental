@@ -7,31 +7,34 @@ import { GameProvider } from "./src/context/GameContext";
 import { WebSocketProvider } from "./src/context/WebSocketContext";
 import { Provider as PaperProvider } from "react-native-paper";
 import { theme } from "styles/theme";
+import { SettingsProvider } from "./src/context/SettingsContext";
 import "setimmediate";
 
 const App = () => {
   // Create app content
   const AppContent = () => (
-    <ThemeProvider>
-      <PaperProvider>
-        <GameProvider>
-          <NavigationContainer>
-            <SafeAreaView
-              style={[
-                styles.container,
-                { backgroundColor: theme.colors.background },
-              ]}
-            >
-              <StatusBar
-                barStyle="light-content"
-                backgroundColor={theme.colors.background}
-              />
-              <AppNavigator />
-            </SafeAreaView>
-          </NavigationContainer>
-        </GameProvider>
-      </PaperProvider>
-    </ThemeProvider>
+    <SettingsProvider>
+      <ThemeProvider>
+        <PaperProvider>
+          <GameProvider>
+            <NavigationContainer>
+              <SafeAreaView
+                style={[
+                  styles.container,
+                  { backgroundColor: theme.colors.background },
+                ]}
+              >
+                <StatusBar
+                  barStyle="light-content"
+                  backgroundColor={theme.colors.background}
+                />
+                <AppNavigator />
+              </SafeAreaView>
+            </NavigationContainer>
+          </GameProvider>
+        </PaperProvider>
+      </ThemeProvider>
+    </SettingsProvider>
   );
   // Add WebSocketProvider for web platform only
   if (Platform.OS === "web") {
