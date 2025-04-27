@@ -1,31 +1,56 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { useContext, useMemo, useEffect, useState } from "react";
+// import {
+//   useSharedValue,
+//   withTiming,
+//   SharedValue,
+// } from "react-native-reanimated";
+import { Themes, Theme } from "../styles/theme";
+
+export type ThemeType = keyof typeof Themes;
 
 interface ThemeContextType {
-  isDarkMode: boolean;
-  themeColor: string;
-  setIsDarkMode: (value: boolean) => void;
-  setThemeColor: (color: string) => void;
+  themeType: ThemeType;
+  currentTheme: Theme;
+  setThemeType: (themeType: ThemeType) => void;
+  // transitionProgress: SharedValue<number>;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const ThemeContext = React.createContext<ThemeContextType | null>(null);
+ThemeContext.displayName = "ThemeContext";
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [themeColor, setThemeColor] = useState("#0066FF");
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [themeType, setThemeType] = useState<ThemeType>("default");
+  // const transitionProgress = useSharedValue(0);
+
+  const currentTheme = useMemo(() => {
+    return Themes[themeType] ?? Themes.default;
+  }, [themeType]);
+
+  // useEffect(() => {
+  //   const themeKeys = Object.keys(Themes) as ThemeType[];
+  //   const targetIndex = themeKeys.indexOf(themeType);
+  //   transitionProgress.value = withTiming(targetIndex, { duration: 500 });
+  // }, [themeType]);
+
+  const value = useMemo(
+    () => ({
+      themeType,
+      currentTheme,
+      setThemeType,
+      // transitionProgress,
+    }),
+    [themeType, currentTheme]
+  );
 
   return (
-    <ThemeContext.Provider
-      value={{ isDarkMode, themeColor, setIsDarkMode, setThemeColor }}
-    >
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
-};
+}
 
-export const useTheme = () => {
+export function useTheme() {
   const context = useContext(ThemeContext);
-  if (!context) throw new Error("useTheme must be used within ThemeProvider");
+  if (context === null) {
+    throw new Error("useTheme must be used within a ThemeProvider");
+  }
   return context;
-};
+}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   TouchableOpacity,
   Text,
@@ -8,13 +8,13 @@ import {
   ViewStyle,
   TextStyle,
   Animated,
-} from 'react-native';
-import { theme } from '../../styles/theme';
+} from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
-  variant?: 'primary' | 'secondary' | 'outline';
-  size?: 'small' | 'medium' | 'large';
+  variant?: "primary" | "secondary" | "outline";
+  size?: "small" | "medium" | "large";
   loading?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
@@ -23,8 +23,8 @@ interface ButtonProps extends TouchableOpacityProps {
 
 const Button: React.FC<ButtonProps> = ({
   title,
-  variant = 'primary',
-  size = 'medium',
+  variant = "primary",
+  size = "medium",
   loading = false,
   disabled = false,
   style,
@@ -33,6 +33,7 @@ const Button: React.FC<ButtonProps> = ({
   ...rest
 }) => {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const { currentTheme } = useTheme();
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -93,6 +94,66 @@ const Button: React.FC<ButtonProps> = ({
     ];
   };
 
+  const styles = StyleSheet.create({
+    button: {
+      borderRadius: 10,
+      justifyContent: "center",
+      alignItems: "center",
+      flexDirection: "row",
+    },
+    primaryButton: {
+      backgroundColor: currentTheme.colors.primary,
+    },
+    secondaryButton: {
+      backgroundColor: currentTheme.colors.backgroundLight,
+    },
+    outlineButton: {
+      backgroundColor: "transparent",
+      borderWidth: 2,
+      borderColor: currentTheme.colors.primary,
+    },
+    smallButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+    mediumButton: {
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+    },
+    largeButton: {
+      paddingHorizontal: 24,
+      paddingVertical: 16,
+    },
+    disabledButton: {
+      opacity: 0.5,
+    },
+    text: {
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    primaryText: {
+      color: currentTheme.colors.white,
+    },
+    secondaryText: {
+      color: currentTheme.colors.text,
+    },
+    outlineText: {
+      color: currentTheme.colors.primary,
+    },
+    smallText: {
+      fontSize: 14,
+    },
+    mediumText: {
+      fontSize: 16,
+    },
+    largeText: {
+      fontSize: 18,
+    },
+    disabledText: {
+      opacity: 0.8,
+    },
+  });
+
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <TouchableOpacity
@@ -105,7 +166,11 @@ const Button: React.FC<ButtonProps> = ({
       >
         {loading ? (
           <ActivityIndicator
-            color={variant === 'outline' ? theme.colors.primary : '#FFF'}
+            color={
+              variant === "outline"
+                ? currentTheme.colors.primary
+                : currentTheme.colors.white
+            }
             size="small"
           />
         ) : (
@@ -118,65 +183,5 @@ const Button: React.FC<ButtonProps> = ({
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  button: {
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  primaryButton: {
-    backgroundColor: theme.colors.primary,
-  },
-  secondaryButton: {
-    backgroundColor: theme.colors.backgroundLight,
-  },
-  outlineButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
-  },
-  smallButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  mediumButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  largeButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  text: {
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  primaryText: {
-    color: '#FFF',
-  },
-  secondaryText: {
-    color: theme.colors.text,
-  },
-  outlineText: {
-    color: theme.colors.primary,
-  },
-  smallText: {
-    fontSize: 14,
-  },
-  mediumText: {
-    fontSize: 16,
-  },
-  largeText: {
-    fontSize: 18,
-  },
-  disabledText: {
-    opacity: 0.8,
-  },
-});
 
 export default Button;

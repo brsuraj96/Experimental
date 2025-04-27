@@ -47,6 +47,59 @@ export interface SlideTilePosition {
   col: number;
 }
 
+export interface Matchstick {
+  id: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  isMovable: boolean;
+  isSelected: boolean;
+  isPlaced: boolean;
+}
+
+export interface DifferenceSpot {
+  id: string;
+  x: number;
+  y: number;
+  radius: number;
+  isFound: boolean;
+}
+
+export interface SpotDifferenceLevel {
+  id: string;
+  imageA: string;
+  imageB: string;
+  differences: DifferenceSpot[];
+  difficulty: Difficulty;
+}
+
+// Word Search Types
+export interface WordSearchCell {
+  letter: string;
+  isSelected: boolean;
+  isHighlighted: boolean;
+  isFound: boolean;
+  row: number;
+  col: number;
+}
+
+export type WordSearchBoard = WordSearchCell[][];
+
+export interface WordSearchWord {
+  word: string;
+  isFound: boolean;
+  startCell?: { row: number; col: number };
+  endCell?: { row: number; col: number };
+}
+
+export interface WordSearchLevel {
+  size: number;
+  board: WordSearchBoard;
+  words: WordSearchWord[];
+  difficulty: Difficulty;
+}
+
 // Flow Free Types
 export enum FlowColor {
   RED = "#EF5350",

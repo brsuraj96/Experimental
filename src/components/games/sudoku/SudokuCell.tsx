@@ -1,6 +1,6 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, View } from "react-native";
-import { theme } from "../../../styles/theme";
+import { useTheme } from "../../../context/ThemeContext";
 
 interface SudokuCellProps {
   value?: number | null;
@@ -29,6 +29,8 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
   rightBorder,
   bottomBorder,
 }) => {
+  const { currentTheme } = useTheme();
+
   // Render notes grid (3x3) when cell has no value
   const renderNotes = () => {
     if (value !== null) return null;
@@ -65,6 +67,54 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     );
   };
 
+  const styles = StyleSheet.create({
+    cell: {
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: currentTheme.colors.backgroundDark,
+      position: "relative",
+    },
+    highlightedCell: {
+      backgroundColor: `${currentTheme.colors.secondary}33`,
+    },
+    selectedCell: {
+      backgroundColor: `${currentTheme.colors.primary}4D`,
+    },
+    errorCell: {
+      backgroundColor: `${currentTheme.colors.error}33`,
+    },
+    value: {
+      fontSize: 22,
+      fontWeight: "600",
+      color: currentTheme.colors.text,
+      textAlign: "center",
+      width: "100%",
+      height: "100%",
+      textAlignVertical: "center",
+    },
+    fixedValue: {
+      fontWeight: "bold",
+      color: currentTheme.colors.primary,
+    },
+    errorValue: {
+      color: currentTheme.colors.error,
+    },
+    notesContainer: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    noteText: {
+      position: "absolute",
+      fontSize: 10,
+      textAlign: "center",
+      lineHeight: 12,
+      color: currentTheme.colors.textSecondary,
+    },
+  });
+
   return (
     <TouchableOpacity
       style={[
@@ -76,8 +126,12 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
           borderBottomWidth: bottomBorder ? 2 : 1,
           borderLeftWidth: 0,
           borderTopWidth: 0,
-          borderRightColor: rightBorder ? "#fff" : "rgba(255, 255, 255, 0.2)",
-          borderBottomColor: bottomBorder ? "#fff" : "rgba(255, 255, 255, 0.2)",
+          borderRightColor: rightBorder
+            ? currentTheme.colors.text
+            : `${currentTheme.colors.text}33`, // 33 is 20% opacity in hex
+          borderBottomColor: bottomBorder
+            ? currentTheme.colors.text
+            : `${currentTheme.colors.text}33`,
         },
         isHighlighted && styles.highlightedCell,
         isSelected && styles.selectedCell,
@@ -103,53 +157,5 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  cell: {
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#333",
-    position: "relative",
-  },
-  highlightedCell: {
-    backgroundColor: "rgba(77, 208, 225, 0.2)",
-  },
-  selectedCell: {
-    backgroundColor: "rgba(255, 111, 97, 0.3)",
-  },
-  errorCell: {
-    backgroundColor: "rgba(239, 83, 80, 0.2)",
-  },
-  value: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: theme.colors.text,
-    textAlign: "center",
-    width: "100%",
-    height: "100%",
-    textAlignVertical: "center",
-  },
-  fixedValue: {
-    fontWeight: "bold",
-    color: theme.colors.primary,
-  },
-  errorValue: {
-    color: theme.colors.error,
-  },
-  notesContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  noteText: {
-    position: "absolute",
-    fontSize: 10,
-    textAlign: "center",
-    lineHeight: 18,
-    color: theme.colors.textSecondary,
-  },
-});
 
 export default SudokuCell;

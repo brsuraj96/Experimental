@@ -1,9 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { FontAwesome5 } from "@expo/vector-icons";
 import { Difficulty } from "../../../types";
 import Timer from "../../common/Timer";
 import CustomDropdown from "../../common/CustomDropdown";
-import { theme } from "../../../styles/theme";
+import { useTheme } from "../../../context/ThemeContext";
 
 interface GameHeaderProps {
   mistakes: number;
@@ -24,13 +25,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   showDifficultySelector = false,
   onDifficultyChange,
 }) => {
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
+  const { currentTheme } = useTheme();
 
   const difficulties: Difficulty[] = [
     Difficulty.BEGINNER,
@@ -52,21 +47,27 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   }));
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { padding: currentTheme.spacing.small }]}>
       <View
         style={[
           styles.stat,
           {
-            display: "flex",
             flexDirection: "row",
+            alignItems: "center",
             gap: 4,
           },
         ]}
       >
-        <Text style={styles.label}>Mistakes:</Text>
-        <Text style={styles.value}>{mistakes}</Text>
+        <FontAwesome5
+          name="exclamation-circle"
+          size={16}
+          color={currentTheme.colors.error}
+        />
+        <Text style={[styles.value, { color: currentTheme.colors.text }]}>
+          {": " + mistakes}
+        </Text>
       </View>
-      <View style={styles.stat}>
+      <View style={[styles.stat, { marginLeft: 26 }]}>
         {showDifficultySelector ? (
           <View style={styles.dropdownContainer}>
             <CustomDropdown
@@ -78,10 +79,21 @@ const GameHeader: React.FC<GameHeaderProps> = ({
             />
           </View>
         ) : (
-          <Text style={styles.value}>{difficulty}</Text>
+          <Text style={[styles.value, { color: currentTheme.colors.text }]}>
+            {difficulty}
+          </Text>
         )}
       </View>
-      <View style={styles.stat}>
+      <View
+        style={[
+          styles.stat,
+          {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 4,
+          },
+        ]}
+      >
         <Timer startTime={startTime} isRunning={!isGameCompleted} />
       </View>
     </View>
@@ -93,18 +105,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: theme.spacing.small,
     width: "100%",
   },
   stat: {
     alignItems: "center",
   },
   label: {
-    color: theme.colors.textSecondary,
     fontSize: 16,
   },
   value: {
-    color: theme.colors.text,
     fontSize: 16,
     fontWeight: "bold",
   },

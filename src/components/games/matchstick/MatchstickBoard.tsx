@@ -78,12 +78,12 @@ const MatchstickBoard: React.FC<MatchstickBoardProps> = ({
 // Helper function to determine matchstick color based on its state
 const getMatchstickColor = (matchstick: Matchstick): string => {
   if (!matchstick.isMovable) {
-    return theme.colors.text; // Make non-movable matchsticks more visible
+    return theme.colors.text;
   }
   if (matchstick.isSelected) {
-    return theme.colors.primary; // Selected matchstick is highlighted
+    return theme.colors.primary;
   }
-  return matchstick.isPlaced ? theme.colors.success : "#FF5722"; // Brighter orangish-red for matchsticks
+  return matchstick.isPlaced ? theme.colors.success : theme.colors.error;
 };
 
 const styles = StyleSheet.create({

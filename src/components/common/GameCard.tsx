@@ -1,12 +1,12 @@
-import React from 'react';
+import React from "react";
 import {
   TouchableOpacity,
   Text,
   StyleSheet,
   Animated,
   View,
-} from 'react-native';
-import { theme } from '../../styles/theme';
+} from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 
 interface GameCardProps {
   title: string;
@@ -27,6 +27,7 @@ const GameCard: React.FC<GameCardProps> = ({
   onPress,
   implemented,
 }) => {
+  const { currentTheme } = useTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -43,6 +44,61 @@ const GameCard: React.FC<GameCardProps> = ({
       useNativeDriver: true,
     }).start();
   };
+
+  const styles = StyleSheet.create({
+    cardWrapper: {
+      marginBottom: currentTheme.spacing.medium,
+    },
+    card: {
+      backgroundColor: currentTheme.colors.backgroundLight,
+      borderRadius: 16,
+      borderWidth: 2,
+      padding: currentTheme.spacing.medium,
+      minHeight: 180,
+      shadowColor: currentTheme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 4,
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+    },
+    iconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: currentTheme.spacing.medium,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: currentTheme.colors.text,
+      textAlign: "center",
+      marginBottom: 4,
+    },
+    description: {
+      fontSize: 14,
+      color: currentTheme.colors.textSecondary,
+      textAlign: "center",
+    },
+    comingSoonBadge: {
+      position: "absolute",
+      top: 10,
+      right: 10,
+      backgroundColor: currentTheme.colors.overlay,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 10,
+    },
+    comingSoonText: {
+      color: currentTheme.colors.white,
+      fontSize: 10,
+      fontWeight: "bold",
+    },
+  });
 
   return (
     <Animated.View
@@ -84,60 +140,5 @@ const GameCard: React.FC<GameCardProps> = ({
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  cardWrapper: {
-    marginBottom: theme.spacing.medium,
-  },
-  card: {
-    backgroundColor: theme.colors.backgroundLight,
-    borderRadius: 16,
-    borderWidth: 2,
-    padding: theme.spacing.medium,
-    minHeight: 180,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: theme.spacing.medium,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  description: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-  },
-  comingSoonBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  comingSoonText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-});
 
 export default GameCard;

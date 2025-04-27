@@ -1,20 +1,22 @@
-import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
-import { RootStackParamList } from '../types';
-import HomeScreen from '../screens/HomeScreen';
-import GameScreen from '../screens/GameScreen';
-import CompletionScreen from '../screens/CompletionScreen';
-import { theme } from '../styles/theme';
+import React from "react";
+import { createStackNavigator } from "@react-navigation/stack";
+import { RootStackParamList } from "../types";
+import HomeScreen from "../screens/HomeScreen";
+import GameScreen from "../screens/GameScreen";
+import CompletionScreen from "../screens/CompletionScreen";
+import { useTheme } from "../context/ThemeContext";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 const AppNavigator = () => {
+  const { currentTheme } = useTheme();
+
   return (
     <Stack.Navigator
       initialRouteName="Home"
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: theme.colors.background },
+        cardStyle: { backgroundColor: currentTheme.colors.background },
         cardStyleInterpolator: ({ current: { progress } }) => ({
           cardStyle: {
             opacity: progress.interpolate({

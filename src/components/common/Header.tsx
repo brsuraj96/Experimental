@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   Platform,
   ViewStyle,
+  TouchableWithoutFeedback,
 } from "react-native";
-import { theme } from "../../styles/theme";
 import { Difficulty } from "../../types";
 import { Picker } from "@react-native-picker/picker";
 import ThemeSelector from "../common/ThemeSelector";
+import { useTheme } from "../../context/ThemeContext";
+import { FontAwesome5 } from "@expo/vector-icons";
 
 interface HeaderProps {
   title: string;
@@ -27,9 +29,6 @@ interface HeaderProps {
   onPause?: () => void;
   onResume?: () => void;
   isPaused?: boolean;
-  isDarkMode?: boolean;
-  onThemeChange?: (color: string) => void;
-  onDarkModeToggle?: (value: boolean) => void;
 }
 
 const difficulties: Difficulty[] = [
@@ -53,16 +52,16 @@ const Header: React.FC<HeaderProps> = ({
   onPause,
   onResume,
   isPaused = false,
-  isDarkMode = true,
-  onThemeChange,
-  onDarkModeToggle,
 }) => {
+  const { currentTheme } = useTheme();
+
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(
     (subtitle as Difficulty) || Difficulty.EASY
   );
   const [showPauseDialog, setShowPauseDialog] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState("#0066FF");
+
+  const selectorRef = useRef<View>(null);
 
   useEffect(() => {
     if (subtitle && subtitle !== selectedDifficulty) {
@@ -121,6 +120,148 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  const styles = StyleSheet.create({
+    header: {
+      position: "relative",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingTop: Platform.OS === "ios" ? 44 : 10,
+      paddingBottom: 10,
+      paddingHorizontal: currentTheme.spacing.medium,
+      backgroundColor: currentTheme.colors.backgroundDark,
+      borderBottomWidth: 1,
+      borderBottomColor: currentTheme.colors.border,
+    },
+    leftContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    rightContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    backButton: {
+      marginRight: currentTheme.spacing.medium,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: "bold",
+      color: currentTheme.colors.text,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: currentTheme.colors.textSecondary,
+      marginTop: 2,
+    },
+    actionButton: {
+      marginLeft: currentTheme.spacing.medium,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: currentTheme.colors.backgroundLight,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    iconText: {
+      fontSize: 20,
+      color: currentTheme.colors.text,
+      textAlign: "center",
+    },
+    difficultyContainer: {
+      marginLeft: currentTheme.spacing.small,
+      marginRight: currentTheme.spacing.small,
+    },
+    difficultyButton: {
+      backgroundColor: currentTheme.colors.backgroundLight,
+      paddingHorizontal: 2,
+      paddingVertical: 2,
+      borderRadius: 12,
+    },
+    difficultyText: {
+      color: currentTheme.colors.text,
+      fontSize: 6,
+    },
+    dropdownContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 2,
+    },
+    dropdownIcon: {
+      color: currentTheme.colors.text,
+      fontSize: 6,
+    },
+    picker: {
+      height: 50,
+      width: 140,
+      color: currentTheme.colors.text,
+      backgroundColor: currentTheme.colors.backgroundLight,
+      borderRadius: 12,
+    },
+    pauseOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: currentTheme.colors.overlay,
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000,
+    },
+    pauseDialog: {
+      backgroundColor: currentTheme.colors.backgroundDark,
+      padding: currentTheme.spacing.large,
+      borderRadius: 16,
+      minWidth: 200,
+      alignItems: "center",
+    },
+    pauseTitle: {
+      fontSize: 24,
+      color: currentTheme.colors.text,
+      marginBottom: currentTheme.spacing.large,
+    },
+    pauseButtons: {
+      flexDirection: "column",
+      gap: currentTheme.spacing.medium,
+    },
+    pauseButton: {
+      backgroundColor: currentTheme.colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 8,
+      minWidth: 120,
+    },
+    restartButton: {
+      backgroundColor: currentTheme.colors.error,
+    },
+    pauseButtonText: {
+      color: currentTheme.colors.text,
+      fontSize: 16,
+      fontWeight: "bold",
+      textAlign: "center",
+    },
+    themeOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      zIndex: 9998,
+    },
+    themeSelectorContainer: {
+      position: "absolute",
+      right: 10,
+      top: Platform.OS === "ios" ? 100 : 50,
+      zIndex: 9999,
+      elevation: 999,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+  });
+
   return (
     <>
       <View style={[styles.header, containerStyle]}>
@@ -131,7 +272,11 @@ const Header: React.FC<HeaderProps> = ({
               onPress={onBack}
               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
-              <Text style={styles.iconText}>←</Text>
+              <FontAwesome5
+                name="arrow-left"
+                size={20}
+                color={currentTheme.colors.text}
+              />
             </TouchableOpacity>
           )}
           <View>
@@ -147,7 +292,11 @@ const Header: React.FC<HeaderProps> = ({
               onPress={onUndo}
               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
-              <Text style={styles.iconText}>↺</Text>
+              <FontAwesome5
+                name="undo"
+                size={20}
+                color={currentTheme.colors.text}
+              />
             </TouchableOpacity>
           )}
 
@@ -157,7 +306,11 @@ const Header: React.FC<HeaderProps> = ({
               onPress={onHint}
               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
-              <Text style={styles.iconText}>?</Text>
+              <FontAwesome5
+                name="question"
+                size={20}
+                color={currentTheme.colors.text}
+              />
             </TouchableOpacity>
           )}
 
@@ -167,7 +320,11 @@ const Header: React.FC<HeaderProps> = ({
               onPress={onReset}
               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
-              <Text style={styles.iconText}>↻</Text>
+              <FontAwesome5
+                name="sync"
+                size={20}
+                color={currentTheme.colors.text}
+              />
             </TouchableOpacity>
           )}
 
@@ -177,7 +334,11 @@ const Header: React.FC<HeaderProps> = ({
               onPress={() => setShowPauseDialog(true)}
               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
-              <Text style={styles.iconText}>{isPaused ? "▶" : "⏸"}</Text>
+              <FontAwesome5
+                name={isPaused ? "play" : "pause"}
+                size={20}
+                color={currentTheme.colors.text}
+              />
             </TouchableOpacity>
           )}
 
@@ -186,7 +347,11 @@ const Header: React.FC<HeaderProps> = ({
             onPress={() => setShowThemeSelector(!showThemeSelector)}
             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
           >
-            <Text style={styles.iconText}>🎨</Text>
+            <FontAwesome5
+              name="palette"
+              size={20}
+              color={currentTheme.colors.text}
+            />
           </TouchableOpacity>
 
           {showDifficultySelector && renderDifficultySelector()}
@@ -195,17 +360,13 @@ const Header: React.FC<HeaderProps> = ({
       </View>
 
       {showThemeSelector && (
-        <ThemeSelector
-          selectedTheme={selectedTheme}
-          isDarkMode={isDarkMode}
-          onThemeSelect={(color) => {
-            setSelectedTheme(color);
-            onThemeChange?.(color);
-          }}
-          onDarkModeToggle={(value) => {
-            onDarkModeToggle?.(value);
-          }}
-        />
+        <TouchableWithoutFeedback onPress={() => setShowThemeSelector(false)}>
+          <View style={styles.themeOverlay}>
+            <View ref={selectorRef} style={styles.themeSelectorContainer}>
+              <ThemeSelector />
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
       )}
 
       {showPauseDialog && (
@@ -238,127 +399,5 @@ const Header: React.FC<HeaderProps> = ({
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 44 : 10,
-    paddingBottom: 10,
-    paddingHorizontal: theme.spacing.medium,
-    backgroundColor: theme.colors.backgroundDark,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
-  },
-  leftContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  rightContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  backButton: {
-    marginRight: theme.spacing.medium,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: theme.colors.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  actionButton: {
-    marginLeft: theme.spacing.medium,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: theme.colors.backgroundLight,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  iconText: {
-    fontSize: 20,
-    color: theme.colors.text,
-    textAlign: "center",
-  },
-  difficultyContainer: {
-    marginLeft: theme.spacing.small,
-    marginRight: theme.spacing.small,
-  },
-  difficultyButton: {
-    backgroundColor: theme.colors.backgroundLight,
-    paddingHorizontal: 2,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  difficultyText: {
-    color: theme.colors.text,
-    fontSize: 6,
-  },
-  dropdownContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
-  dropdownIcon: {
-    color: theme.colors.text,
-    fontSize: 6,
-  },
-  picker: {
-    height: 50,
-    width: 140,
-    color: theme.colors.text,
-    backgroundColor: theme.colors.backgroundLight,
-    borderRadius: 12,
-  },
-  pauseOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  pauseDialog: {
-    backgroundColor: theme.colors.backgroundDark,
-    padding: theme.spacing.large,
-    borderRadius: 16,
-    minWidth: 200,
-    alignItems: "center",
-  },
-  pauseTitle: {
-    fontSize: 24,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.large,
-  },
-  pauseButtons: {
-    flexDirection: "column",
-    gap: theme.spacing.medium,
-  },
-  pauseButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    minWidth: 120,
-  },
-  restartButton: {
-    backgroundColor: theme.colors.error,
-  },
-  pauseButtonText: {
-    color: theme.colors.text,
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-});
 
 export default Header;

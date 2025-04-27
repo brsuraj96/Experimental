@@ -1,12 +1,16 @@
-import React from 'react';
-import Svg, { Rect, G, Text } from 'react-native-svg';
+import React from "react";
+import Svg, { Rect, G, Text } from "react-native-svg";
+import { theme } from "../../styles/theme";
 
 interface IconProps {
   size?: number;
   color?: string;
 }
 
-const IconSlideTiles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
+const IconSlideTiles: React.FC<IconProps> = ({
+  size = 24,
+  color = theme.colors.white,
+}) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <G>
@@ -21,7 +25,7 @@ const IconSlideTiles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) =
           stroke={color}
           strokeWidth="1.5"
         />
-        
+
         {/* Top row tiles */}
         <G>
           <Rect
@@ -40,12 +44,12 @@ const IconSlideTiles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) =
             fontSize="3"
             fill={color}
             textAnchor="middle"
-            dominantBaseline="middle"
+            alignmentBaseline="middle"
           >
             1
           </Text>
         </G>
-        
+
         <G>
           <Rect
             x="9"
@@ -63,12 +67,12 @@ const IconSlideTiles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) =
             fontSize="3"
             fill={color}
             textAnchor="middle"
-            dominantBaseline="middle"
+            alignmentBaseline="middle"
           >
             2
           </Text>
         </G>
-        
+
         <G>
           <Rect
             x="15"
@@ -86,12 +90,12 @@ const IconSlideTiles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) =
             fontSize="3"
             fill={color}
             textAnchor="middle"
-            dominantBaseline="middle"
+            alignmentBaseline="middle"
           >
             3
           </Text>
         </G>
-        
+
         {/* Middle row tiles */}
         <G>
           <Rect
@@ -110,12 +114,12 @@ const IconSlideTiles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) =
             fontSize="3"
             fill={color}
             textAnchor="middle"
-            dominantBaseline="middle"
+            alignmentBaseline="middle"
           >
             4
           </Text>
         </G>
-        
+
         <G>
           <Rect
             x="9"
@@ -133,12 +137,12 @@ const IconSlideTiles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) =
             fontSize="3"
             fill={color}
             textAnchor="middle"
-            dominantBaseline="middle"
+            alignmentBaseline="middle"
           >
             5
           </Text>
         </G>
-        
+
         <G>
           <Rect
             x="15"
@@ -156,12 +160,12 @@ const IconSlideTiles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) =
             fontSize="3"
             fill={color}
             textAnchor="middle"
-            dominantBaseline="middle"
+            alignmentBaseline="middle"
           >
             6
           </Text>
         </G>
-        
+
         {/* Bottom row tiles */}
         <G>
           <Rect
@@ -180,12 +184,12 @@ const IconSlideTiles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) =
             fontSize="3"
             fill={color}
             textAnchor="middle"
-            dominantBaseline="middle"
+            alignmentBaseline="middle"
           >
             7
           </Text>
         </G>
-        
+
         <G>
           <Rect
             x="9"
@@ -203,12 +207,12 @@ const IconSlideTiles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) =
             fontSize="3"
             fill={color}
             textAnchor="middle"
-            dominantBaseline="middle"
+            alignmentBaseline="middle"
           >
             8
           </Text>
         </G>
-        
+
         {/* Empty space for tile 9 */}
       </G>
     </Svg>

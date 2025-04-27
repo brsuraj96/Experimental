@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import React, { useCallback, useRef, useState } from "react";
 import { AntDesign } from "@expo/vector-icons";
-import { theme } from "../../styles/theme";
+import { useTheme } from "../../context/ThemeContext";
 
 type OptionItem = {
   value: string;
@@ -28,6 +28,8 @@ export default function Dropdown({
   onChange,
   placeholder,
 }: DropDownProps) {
+  const { currentTheme } = useTheme();
+
   const [expanded, setExpanded] = useState(false);
 
   const toggleExpanded = useCallback(() => setExpanded(!expanded), [expanded]);
@@ -43,6 +45,54 @@ export default function Dropdown({
     setValue(item.label);
     setExpanded(false);
   }, []);
+
+  const styles = StyleSheet.create({
+    backdrop: {
+      padding: 20,
+      justifyContent: "center",
+      alignItems: "center",
+      flex: 1,
+    },
+    optionItem: {
+      height: 32,
+      justifyContent: "center",
+      paddingHorizontal: 8,
+    },
+    separator: {
+      height: 4,
+    },
+    options: {
+      position: "relative",
+      backgroundColor: currentTheme.colors.backgroundLight,
+      width: 120,
+      padding: 8,
+      borderRadius: 6,
+      maxHeight: 200,
+    },
+    text: {
+      fontSize: 12,
+      color: currentTheme.colors.text,
+    },
+    button: {
+      height: 32,
+      backgroundColor: currentTheme.colors.backgroundLight,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+      justifyContent: "center",
+    },
+    buttonContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      width: 105,
+    },
+    optionText: {
+      fontSize: 12,
+      color: currentTheme.colors.text,
+    },
+  });
+
   return (
     <View
       ref={buttonRef}
@@ -66,7 +116,7 @@ export default function Dropdown({
           <Text style={styles.text}>{value || placeholder}</Text>
           <AntDesign
             name={expanded ? "caretup" : "caretdown"}
-            color={theme.colors.text}
+            color={currentTheme.colors.text}
             size={12}
           />
         </View>
@@ -79,8 +129,8 @@ export default function Dropdown({
                 style={[
                   styles.options,
                   {
-                    top: -150,
-                    left: -6,
+                    top: -148,
+                    right: 10,
                   },
                 ]}
               >
@@ -108,50 +158,3 @@ export default function Dropdown({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    padding: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    flex: 1,
-  },
-  optionItem: {
-    height: 32,
-    justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  separator: {
-    height: 4,
-  },
-  options: {
-    position: "relative",
-    backgroundColor: theme.colors.backgroundLight,
-    width: 120,
-    padding: 8,
-    borderRadius: 6,
-    maxHeight: 200,
-  },
-  text: {
-    fontSize: 12,
-    color: theme.colors.text,
-  },
-  button: {
-    height: 32,
-    backgroundColor: theme.colors.backgroundLight,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    justifyContent: "center",
-  },
-  buttonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: 105,
-  },
-  optionText: {
-    fontSize: 12,
-    color: theme.colors.text,
-  },
-});

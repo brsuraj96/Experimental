@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, useWindowDimensions } from "react-native";
 import { SudokuBoard as SudokuBoardType } from "../../../types";
 import SudokuCell from "./SudokuCell";
-import { theme } from "../../../styles/theme";
+import { useTheme } from "../../../context/ThemeContext";
 
 interface SudokuBoardProps {
   board: SudokuBoardType;
@@ -17,6 +17,8 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({
 }) => {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
+
+  const { currentTheme } = useTheme();
 
   const outerPadding = 32;
   const maxBoardSize = isLandscape ? 280 : 360;
@@ -72,6 +74,8 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({
         {
           width: totalSize,
           height: totalSize,
+          borderColor: currentTheme.colors.text,
+          backgroundColor: currentTheme.colors.backgroundLight,
         },
       ]}
     >
@@ -111,8 +115,6 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({
 const styles = StyleSheet.create({
   board: {
     borderWidth: 2,
-    borderColor: theme.colors.text,
-    backgroundColor: theme.colors.backgroundLight,
     borderRadius: 8,
     overflow: "hidden",
   },

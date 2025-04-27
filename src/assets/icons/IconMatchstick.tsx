@@ -1,12 +1,16 @@
-import React from 'react';
-import Svg, { Line, Circle, G } from 'react-native-svg';
+import React from "react";
+import Svg, { Line, Circle, G } from "react-native-svg";
+import { theme } from "../../styles/theme";
 
 interface IconProps {
   size?: number;
   color?: string;
 }
 
-const IconMatchstick: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
+const IconMatchstick: React.FC<IconProps> = ({
+  size = 24,
+  color = theme.colors.white,
+}) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <G>
@@ -65,7 +69,7 @@ const IconMatchstick: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) =
           strokeWidth="2"
           strokeLinecap="round"
         />
-        
+
         {/* Dots indicating junction points */}
         <Circle cx="6" cy="6" r="1.5" fill={color} />
         <Circle cx="12" cy="6" r="1.5" fill={color} />

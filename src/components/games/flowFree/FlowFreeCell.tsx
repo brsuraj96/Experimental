@@ -99,7 +99,9 @@ const FlowFreeCell: React.FC<FlowFreeCellProps> = ({
               height: size * 0.7,
               borderRadius: size * 0.35,
               backgroundColor: cell.color,
-              borderColor: isActive ? "#FFF" : "rgba(0,0,0,0.3)",
+              borderColor: isActive
+                ? theme.colors.white
+                : `${theme.colors.backgroundDark}4D`,
               transform: [{ scale: isActive ? 1.1 : 1 }],
             },
           ]}
@@ -229,15 +231,17 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     opacity: 0.6,
+    backgroundColor: theme.colors.backgroundLight,
   },
   connection: {
     position: "absolute",
-    backgroundColor: "red", // Will be overridden
+    backgroundColor: theme.colors.primary, // Will be overridden by dynamic color
     borderRadius: 2,
   },
   endpoint: {
     position: "absolute",
     borderWidth: 2,
+    borderColor: theme.colors.white,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 10,

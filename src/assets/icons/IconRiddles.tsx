@@ -1,12 +1,16 @@
-import React from 'react';
-import Svg, { Path, Circle, G, Rect } from 'react-native-svg';
+import React from "react";
+import Svg, { Path, Circle, G, Rect } from "react-native-svg";
+import { theme } from "../../styles/theme";
 
 interface IconProps {
   size?: number;
   color?: string;
 }
 
-const IconRiddles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
+const IconRiddles: React.FC<IconProps> = ({
+  size = 24,
+  color = theme.colors.white,
+}) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <G>
@@ -17,7 +21,7 @@ const IconRiddles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
           strokeWidth="1.5"
           strokeLinecap="round"
         />
-        
+
         {/* Light bulb base */}
         <Path
           d="M9 17H15"
@@ -31,7 +35,7 @@ const IconRiddles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
           strokeWidth="1.5"
           strokeLinecap="round"
         />
-        
+
         {/* Light rays */}
         <Path
           d="M12 3V4"
@@ -63,7 +67,7 @@ const IconRiddles: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
           strokeWidth="1.5"
           strokeLinecap="round"
         />
-        
+
         {/* Puzzle elements inside the bulb */}
         <Circle cx="12" cy="10" r="1" fill={color} />
         <Path

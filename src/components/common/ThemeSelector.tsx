@@ -1,104 +1,121 @@
 import React from "react";
-import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  Switch,
-  Platform,
-  Text,
-} from "react-native";
-import { theme } from "../../styles/theme";
+import { View, TouchableOpacity, StyleSheet, Switch, Text } from "react-native";
+import { FontAwesome5 } from "@expo/vector-icons";
+import { useTheme } from "../../context/ThemeContext";
+import { Themes } from "../../styles/theme";
 
-interface ThemeSelectorProps {
-  selectedTheme: string;
-  isDarkMode: boolean;
-  onThemeSelect?: (color: string) => void;
-  onDarkModeToggle?: (value: boolean) => void;
-}
+const ThemeSelector: React.FC = () => {
+  const { themeType, setThemeType, currentTheme } = useTheme();
 
-const themeColors = [
-  { color: "#0066FF", name: "Blue" },
-  { color: "#FFF3E0", name: "Beige" },
-  { color: "#E8F5E9", name: "Green" },
-  { color: "#000000", name: "Black" },
-  { color: "#1A237E", name: "Navy" },
-];
+  const themeOptions = Object.keys(Themes).map((key) => ({
+    type: key as keyof typeof Themes,
+    label: key.charAt(0).toUpperCase() + key.slice(1), // Capitalize first letter
+    color: Themes[key as keyof typeof Themes].colors.background,
+  }));
 
-const ThemeSelector = ({
-  selectedTheme,
-  isDarkMode,
-  onThemeSelect,
-  onDarkModeToggle,
-}: ThemeSelectorProps) => {
+  // Create styles with current theme
+  const themedStyles = StyleSheet.create({
+    container: {
+      maxWidth: 300,
+      borderRadius: 12,
+      padding: 12,
+      backgroundColor: currentTheme.colors.backgroundMedium,
+    },
+    colorContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 12,
+      justifyContent: "center",
+    },
+    colorButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      borderWidth: 2,
+      borderColor: "transparent",
+      justifyContent: "center",
+      alignItems: "center",
+      margin: 4,
+    },
+    selectedColor: {
+      borderColor: currentTheme.colors.text,
+    },
+    colorName: {
+      color: currentTheme.colors.text,
+      fontSize: 12,
+      fontWeight: "600",
+      textAlign: "center",
+      marginTop: 4,
+    },
+    syncContainer: {
+      borderTopWidth: 1,
+      borderTopColor: currentTheme.colors.border,
+      paddingTop: 12,
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingHorizontal: 8,
+      marginTop: 8,
+    },
+    themeOptionContainer: {
+      alignItems: "center",
+      width: 56,
+    },
+    checkIcon: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: [{ translateX: -8 }, { translateY: -8 }],
+    },
+  });
+
+  const isDarkTheme = themeType === "dark";
+
   return (
-    <View style={styles.container}>
-      <View style={styles.colorContainer}>
-        {themeColors.map(({ color, name }) => (
-          <TouchableOpacity
-            key={color}
-            style={[
-              styles.colorButton,
-              { backgroundColor: color },
-              selectedTheme === color && styles.selectedColor,
-            ]}
-            onPress={() => onThemeSelect?.(color)}
-          >
-            <Text style={styles.colorName}>{name}</Text>
-          </TouchableOpacity>
+    <View style={themedStyles.container}>
+      <View style={themedStyles.colorContainer}>
+        {themeOptions.map((option) => (
+          <View key={option.type} style={themedStyles.themeOptionContainer}>
+            <TouchableOpacity
+              style={[
+                themedStyles.colorButton,
+                { backgroundColor: option.color },
+                themeType === option.type && themedStyles.selectedColor,
+              ]}
+              onPress={() => setThemeType(option.type)}
+            >
+              {themeType === option.type && (
+                <FontAwesome5
+                  name="check"
+                  size={16}
+                  color={currentTheme.colors.text}
+                  style={themedStyles.checkIcon}
+                />
+              )}
+            </TouchableOpacity>
+            <Text style={themedStyles.colorName}>{option.label}</Text>
+          </View>
         ))}
       </View>
-      <View style={styles.syncContainer}>
+      <View style={themedStyles.syncContainer}>
+        <Text style={themedStyles.colorName}>Dark Mode:</Text>
         <Switch
-          value={isDarkMode}
-          onValueChange={onDarkModeToggle}
-          trackColor={{ false: "#767577", true: "#81b0ff" }}
-          thumbColor={isDarkMode ? "#0066FF" : "#f4f3f4"}
+          value={isDarkTheme}
+          onValueChange={(value) => setThemeType(value ? "dark" : "default")}
+          trackColor={{
+            false: currentTheme.colors.backgroundLight,
+            true: currentTheme.colors.primary,
+          }}
+          thumbColor={
+            isDarkTheme
+              ? currentTheme.colors.text
+              : currentTheme.colors.backgroundDark
+          }
         />
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: "absolute",
-    top: Platform.OS === "ios" ? 100 : 80,
-    right: 10,
-    backgroundColor: theme.colors.backgroundDark,
-    borderRadius: 12,
-    padding: 12,
-    zIndex: 1000,
-  },
-  colorContainer: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
-  colorButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: "transparent",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  selectedColor: {
-    borderColor: "#fff",
-  },
-  colorName: {
-    color: "#fff",
-    fontSize: 10,
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  syncContainer: {
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.1)",
-    paddingTop: 12,
-    alignItems: "center",
-  },
-});
 
 export default ThemeSelector;

@@ -1,45 +1,52 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Text, Animated } from 'react-native';
-import { Difficulty } from '../../../types';
-import WaterFlowBoard from './WaterFlowBoard';
-import Button from '../../common/Button';
-import { generateLevel, rotatePipe, isLevelComplete, getConnectedPipes, getHint } from './logic';
-import useSound from '../../../hooks/useSound';
+import React, { useState, useEffect, useCallback } from "react";
+import { View, StyleSheet, Text, Animated } from "react-native";
+import { Difficulty } from "../../../types";
+import WaterFlowBoard from "./WaterFlowBoard";
+import Button from "../../common/Button";
+import {
+  generateLevel,
+  rotatePipe,
+  isLevelComplete,
+  getConnectedPipes,
+  getHint,
+} from "./logic";
+import useSound from "../../../hooks/useSound";
+import { theme } from "../../../styles/theme";
 
 interface WaterFlowGameProps {
   difficulty: Difficulty;
   onMove: () => void;
   onComplete: () => void;
-  orientation: 'portrait' | 'landscape';
+  orientation: "portrait" | "landscape";
 }
 
-const WaterFlowGame: React.FC<WaterFlowGameProps> = ({ 
-  difficulty, 
-  onMove, 
+const WaterFlowGame: React.FC<WaterFlowGameProps> = ({
+  difficulty,
+  onMove,
   onComplete,
-  orientation 
+  orientation,
 }) => {
   const [level, setLevel] = useState(() => generateLevel(difficulty));
   const [board, setBoard] = useState(level.board);
   const [movesCount, setMovesCount] = useState(0);
   const [isGameComplete, setIsGameComplete] = useState(false);
   const [connectionPulse] = useState(new Animated.Value(0));
-  
+
   const { playSound } = useSound();
-  
+
   // Check for level completion
   useEffect(() => {
     if (isLevelComplete(board, level.sourcePosition)) {
       // Mark all connected pipes
       const connectedBoard = getConnectedPipes(board, level.sourcePosition);
       setBoard(connectedBoard);
-      
+
       // Set game as complete if not already done
       if (!isGameComplete) {
         setIsGameComplete(true);
-        playSound('win');
+        playSound("win");
         onComplete();
-        
+
         // Animate the connected pipes
         Animated.loop(
           Animated.sequence([
@@ -57,23 +64,32 @@ const WaterFlowGame: React.FC<WaterFlowGameProps> = ({
         ).start();
       }
     }
-  }, [board, level.sourcePosition, isGameComplete, onComplete, playSound, connectionPulse]);
-  
+  }, [
+    board,
+    level.sourcePosition,
+    isGameComplete,
+    onComplete,
+    playSound,
+    connectionPulse,
+  ]);
+
   // Handle cell press to rotate a pipe
-  const handleCellPress = useCallback((row: number, col: number) => {
-    if (isGameComplete) return;
-    
-    // Rotate the pipe at this position
-    const newBoard = rotatePipe(board, row, col);
-    setBoard(newBoard);
-    
-    // Update moves count and call onMove callback
-    setMovesCount(prev => prev + 1);
-    onMove();
-    playSound('move');
-    
-  }, [board, isGameComplete, onMove, playSound]);
-  
+  const handleCellPress = useCallback(
+    (row: number, col: number) => {
+      if (isGameComplete) return;
+
+      // Rotate the pipe at this position
+      const newBoard = rotatePipe(board, row, col);
+      setBoard(newBoard);
+
+      // Update moves count and call onMove callback
+      setMovesCount((prev) => prev + 1);
+      onMove();
+      playSound("move");
+    },
+    [board, isGameComplete, onMove, playSound]
+  );
+
   // Start a new level
   const handleNewLevel = useCallback(() => {
     const newLevel = generateLevel(difficulty);
@@ -83,29 +99,33 @@ const WaterFlowGame: React.FC<WaterFlowGameProps> = ({
     setIsGameComplete(false);
     connectionPulse.setValue(0);
   }, [difficulty, connectionPulse]);
-  
+
   // Show a hint by highlighting a pipe that should be rotated
   const handleHint = useCallback(() => {
     if (isGameComplete) return;
-    
+
     // Get hint
-    const hintPosition = getHint(board, level.sourcePosition, level.destinationPosition);
-    
+    const hintPosition = getHint(
+      board,
+      level.sourcePosition,
+      level.destinationPosition
+    );
+
     if (hintPosition) {
-      playSound('hint');
-      
+      playSound("hint");
+
       // Highlight the pipe by temporarily setting it as connected
       const newBoard = [...board];
-      const originalPipe = {...newBoard[hintPosition.row][hintPosition.col]};
-      
+      const originalPipe = { ...newBoard[hintPosition.row][hintPosition.col] };
+
       // Set the pipe as highlighted
       newBoard[hintPosition.row][hintPosition.col] = {
         ...originalPipe,
-        isConnected: true
+        isConnected: true,
       };
-      
+
       setBoard(newBoard);
-      
+
       // Reset the highlighting after a delay
       setTimeout(() => {
         newBoard[hintPosition.row][hintPosition.col] = originalPipe;
@@ -113,57 +133,58 @@ const WaterFlowGame: React.FC<WaterFlowGameProps> = ({
       }, 1000);
     }
   }, [board, isGameComplete, level, playSound]);
-  
+
   return (
-    <View style={[
-      styles.container,
-      orientation === 'landscape' && styles.landscapeContainer
-    ]}>
+    <View
+      style={[
+        styles.container,
+        orientation === "landscape" && styles.landscapeContainer,
+      ]}
+    >
       <View style={styles.gameInfo}>
-        <Text style={styles.difficultyText}>
-          Difficulty: {difficulty}
-        </Text>
-        <Text style={styles.movesText}>
-          Moves: {movesCount}
-        </Text>
+        <Text style={styles.difficultyText}>Difficulty: {difficulty}</Text>
+        <Text style={styles.movesText}>Moves: {movesCount}</Text>
       </View>
-      
-      <WaterFlowBoard
-        board={board}
-        onCellPress={handleCellPress}
-      />
-      
-      <View style={[
-        styles.controls,
-        orientation === 'landscape' && styles.landscapeControls
-      ]}>
-        <Button 
-          title="New Level" 
-          onPress={handleNewLevel} 
+
+      <WaterFlowBoard board={board} onCellPress={handleCellPress} />
+
+      <View
+        style={[
+          styles.controls,
+          orientation === "landscape" && styles.landscapeControls,
+        ]}
+      >
+        <Button
+          title="New Level"
+          onPress={handleNewLevel}
           variant="primary"
           style={styles.button}
         />
-        <Button 
-          title="Hint" 
-          onPress={handleHint} 
+        <Button
+          title="Hint"
+          onPress={handleHint}
           variant="secondary"
           style={styles.button}
           disabled={isGameComplete}
         />
       </View>
-      
+
       {isGameComplete && (
-        <Animated.View style={[
-          styles.completionMessage,
-          {
-            opacity: connectionPulse.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0.7, 1]
-            })
-          }
-        ]}>
+        <Animated.View
+          style={[
+            styles.completionMessage,
+            {
+              opacity: connectionPulse.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.7, 1],
+              }),
+            },
+          ]}
+        >
           <Text style={styles.completionText}>Level Complete!</Text>
-          <Text style={styles.completionSubText}>You've connected the water flow in {movesCount} moves</Text>
+          <Text style={styles.completionSubText}>
+            You've connected the water flow in {movesCount} moves
+          </Text>
         </Animated.View>
       )}
     </View>
@@ -173,69 +194,69 @@ const WaterFlowGame: React.FC<WaterFlowGameProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 16,
   },
   landscapeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
   },
   gameInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
     marginBottom: 16,
     paddingHorizontal: 8,
   },
   difficultyText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#BBBBBB',
+    fontWeight: "bold",
+    color: theme.colors.textDim,
   },
   movesText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#BBBBBB',
+    fontWeight: "bold",
+    color: theme.colors.textDim,
   },
   controls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 24,
-    width: '100%',
+    width: "100%",
   },
   landscapeControls: {
-    flexDirection: 'column',
+    flexDirection: "column",
     marginLeft: 24,
     marginTop: 0,
-    width: 'auto',
+    width: "auto",
   },
   button: {
     marginHorizontal: 8,
     marginVertical: 4,
   },
   completionMessage: {
-    position: 'absolute',
+    position: "absolute",
     padding: 16,
-    backgroundColor: 'rgba(33, 33, 50, 0.9)',
+    backgroundColor: theme.colors.overlay,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
   },
   completionText: {
-    color: '#81C784',
+    color: theme.colors.success,
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
   },
   completionSubText: {
-    color: '#FFFFFF',
+    color: theme.colors.text,
     fontSize: 16,
   },
 });

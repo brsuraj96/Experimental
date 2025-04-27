@@ -1,12 +1,12 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from "react";
 import {
   TouchableOpacity,
   Text,
   StyleSheet,
   Animated,
   Easing,
-} from 'react-native';
-import { theme } from '../../../styles/theme';
+} from "react-native";
+import { theme } from "../../../styles/theme";
 
 interface SlideTileProps {
   value: number;
@@ -97,11 +97,7 @@ const SlideTile: React.FC<SlideTileProps> = ({
         {
           width: size,
           height: size,
-          transform: [
-            { translateX },
-            { translateY },
-            { scale },
-          ],
+          transform: [{ translateX }, { translateY }, { scale }],
         },
       ]}
     >
@@ -126,7 +122,9 @@ const SlideTile: React.FC<SlideTileProps> = ({
             styles.tileText,
             {
               fontSize: size * 0.4,
-              color: isCorrectPosition ? theme.colors.success : theme.colors.text,
+              color: isCorrectPosition
+                ? theme.colors.success
+                : theme.colors.text,
             },
           ]}
         >
@@ -139,23 +137,23 @@ const SlideTile: React.FC<SlideTileProps> = ({
 
 const styles = StyleSheet.create({
   tileWrapper: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: "absolute",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 4,
   },
   tile: {
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 3,
   },
   tileText: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 

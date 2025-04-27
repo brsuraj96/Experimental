@@ -9,7 +9,7 @@ import {
   isGameComplete,
   getHint,
 } from "./logic";
-import { theme } from "../../../styles/theme";
+import { useTheme } from "../../../context/ThemeContext";
 import useSound from "../../../hooks/useSound";
 import GameHeader from "./GameHeader";
 
@@ -32,6 +32,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   isGameCompleted,
   onDifficultyChange,
 }) => {
+  const { currentTheme } = useTheme();
+
   const { playSound } = useSound();
   const [board, setBoard] = useState<SudokuBoard>(() =>
     generateSudoku(difficulty)
@@ -242,6 +244,41 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
 
   const isLandscape = orientation === "landscape";
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: currentTheme.spacing.large,
+    },
+    landscapeContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    board: {
+      width: "100%",
+      aspectRatio: 1,
+      maxWidth: 360,
+      marginBottom: currentTheme.spacing.medium,
+    },
+    landscapeBoard: {
+      width: "50%",
+      aspectRatio: 1,
+      maxWidth: 400,
+      marginRight: currentTheme.spacing.medium,
+      justifyContent: "center",
+    },
+    controls: {
+      width: "100%",
+      maxWidth: 360,
+    },
+    landscapeControls: {
+      width: "40%",
+      maxWidth: 300,
+    },
+  });
+
   return (
     <View style={[styles.container, isLandscape && styles.landscapeContainer]}>
       <GameHeader
@@ -281,40 +318,5 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: theme.spacing.large,
-  },
-  landscapeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  board: {
-    width: "100%",
-    aspectRatio: 1,
-    maxWidth: 360,
-    marginBottom: theme.spacing.medium,
-  },
-  landscapeBoard: {
-    width: "50%",
-    aspectRatio: 1,
-    maxWidth: 400,
-    marginRight: theme.spacing.medium,
-    justifyContent: "center",
-  },
-  controls: {
-    width: "100%",
-    maxWidth: 360,
-  },
-  landscapeControls: {
-    width: "40%",
-    maxWidth: 300,
-  },
-});
 
 export default SudokuGame;

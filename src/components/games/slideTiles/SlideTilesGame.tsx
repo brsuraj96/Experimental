@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { Difficulty } from '../../../types';
-import SlideTilesBoard from './SlideTilesBoard';
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { Difficulty } from "../../../types";
+import SlideTilesBoard from "./SlideTilesBoard";
 import {
   generateBoard,
   isSolved,
@@ -9,15 +9,15 @@ import {
   canMoveTile,
   shuffleBoard,
   getBoardSize,
-} from './logic';
-import { theme } from '../../../styles/theme';
-import useSound from '../../../hooks/useSound';
+} from "./logic";
+import { theme } from "../../../styles/theme";
+import useSound from "../../../hooks/useSound";
 
 interface SlideTilesGameProps {
   difficulty: Difficulty;
   onMove: () => void;
   onComplete: () => void;
-  orientation: 'portrait' | 'landscape';
+  orientation: "portrait" | "landscape";
 }
 
 const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
@@ -58,19 +58,19 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
 
   const handleTilePress = (row: number, col: number) => {
     if (!gameStarted) return;
-    
+
     if (canMoveTile(board, row, col)) {
       const newBoard = moveTile(board, row, col);
       setBoard(newBoard);
       setMoves(moves + 1);
       onMove();
-      playSound('move');
+      playSound("move");
     } else {
-      playSound('error');
+      playSound("error");
     }
   };
 
-  const isLandscape = orientation === 'landscape';
+  const isLandscape = orientation === "landscape";
 
   return (
     <View style={[styles.container, isLandscape && styles.landscapeContainer]}>
@@ -81,38 +81,38 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
           gameStarted={gameStarted}
         />
       </View>
-      
-      <View style={isLandscape ? styles.landscapeControls : styles.controlsContainer}>
+
+      <View
+        style={
+          isLandscape ? styles.landscapeControls : styles.controlsContainer
+        }
+      >
         <View style={styles.infoContainer}>
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Moves</Text>
             <Text style={styles.infoValue}>{moves}</Text>
           </View>
-          
+
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Size</Text>
-            <Text style={styles.infoValue}>{boardSize}×{boardSize}</Text>
+            <Text style={styles.infoValue}>
+              {boardSize}×{boardSize}
+            </Text>
           </View>
         </View>
-        
+
         {!gameStarted ? (
-          <TouchableOpacity
-            style={styles.startButton}
-            onPress={startGame}
-          >
+          <TouchableOpacity style={styles.startButton} onPress={startGame}>
             <Text style={styles.startButtonIcon}>▶</Text>
             <Text style={styles.startButtonText}>Start Game</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity
-            style={styles.resetButton}
-            onPress={resetGame}
-          >
+          <TouchableOpacity style={styles.resetButton} onPress={resetGame}>
             <Text style={styles.resetButtonIcon}>↻</Text>
             <Text style={styles.resetButtonText}>Reset</Text>
           </TouchableOpacity>
         )}
-        
+
         <View style={styles.instructionsContainer}>
           <Text style={styles.instructionsTitle}>How to Play:</Text>
           <Text style={styles.instructionsText}>
@@ -129,42 +129,42 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
   },
   landscapeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   boardContainer: {
-    width: '100%',
+    width: "100%",
     aspectRatio: 1,
     maxWidth: 360,
     marginBottom: theme.spacing.medium,
   },
   landscapeBoard: {
-    width: '50%',
+    width: "50%",
     aspectRatio: 1,
     maxWidth: 400,
   },
   controlsContainer: {
-    width: '100%',
+    width: "100%",
     maxWidth: 360,
   },
   landscapeControls: {
-    width: '45%',
+    width: "45%",
     maxHeight: 400,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   infoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     marginBottom: theme.spacing.medium,
   },
   infoItem: {
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: theme.colors.backgroundLight,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -178,34 +178,34 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
   },
   startButton: {
     backgroundColor: theme.colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
     borderRadius: 10,
     marginBottom: theme.spacing.medium,
   },
   startButtonIcon: {
     fontSize: 20,
-    color: '#FFF',
-    textAlign: 'center',
+    color: theme.colors.textLight,
+    textAlign: "center",
   },
   startButtonText: {
-    color: '#FFF',
+    color: theme.colors.textLight,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginLeft: 8,
   },
   resetButton: {
     backgroundColor: theme.colors.backgroundLight,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
     borderRadius: 10,
     marginBottom: theme.spacing.medium,
@@ -213,12 +213,12 @@ const styles = StyleSheet.create({
   resetButtonIcon: {
     fontSize: 20,
     color: theme.colors.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   resetButtonText: {
     color: theme.colors.text,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginLeft: 8,
   },
   instructionsContainer: {
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   },
   instructionsTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginBottom: 8,
   },

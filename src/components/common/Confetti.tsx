@@ -1,12 +1,20 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Easing, Dimensions } from 'react-native';
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet, Animated, Easing, Dimensions } from "react-native";
+import { theme } from "../../styles/theme";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 // Generate random confetti particles
 const generateConfetti = (count: number) => {
   const confetti = [];
-  const colors = ['#FF6F61', '#4DD0E1', '#81C784', '#FFEB3B', '#9C27B0', '#FF9800'];
+  const colors = [
+    theme.colors.primary,
+    theme.colors.secondary,
+    theme.colors.success,
+    theme.colors.accent,
+    theme.colors.primaryLight,
+    theme.colors.error,
+  ];
 
   for (let i = 0; i < count; i++) {
     const size = Math.random() * 10 + 5;
@@ -17,7 +25,10 @@ const generateConfetti = (count: number) => {
       size,
       color: colors[Math.floor(Math.random() * colors.length)],
       rotation: new Animated.Value(0),
-      position: new Animated.ValueXY({ x: Math.random() * width, y: -20 - Math.random() * 100 }),
+      position: new Animated.ValueXY({
+        x: Math.random() * width,
+        y: -20 - Math.random() * 100,
+      }),
     });
   }
 
@@ -59,7 +70,7 @@ const Confetti: React.FC = () => {
       {confettiItems.map((item) => {
         const rotateZ = item.rotation.interpolate({
           inputRange: [0, 1],
-          outputRange: ['0deg', '360deg'],
+          outputRange: ["0deg", "360deg"],
         });
 
         return (
@@ -87,7 +98,7 @@ const Confetti: React.FC = () => {
 
 const styles = StyleSheet.create({
   confetti: {
-    position: 'absolute',
+    position: "absolute",
     opacity: 0.8,
   },
 });

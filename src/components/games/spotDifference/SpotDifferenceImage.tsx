@@ -52,7 +52,7 @@ const SpotDifferenceImage: React.FC<SpotDifferenceImageProps> = ({
                 <View
                   key={index}
                   style={[
-                    styles.foundSpot,
+                    styles.foundDifference,
                     {
                       left: spot.x - spot.radius,
                       top: spot.y - spot.radius,
@@ -79,9 +79,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  foundSpot: {
+  foundDifference: {
     position: "absolute",
-    backgroundColor: "rgba(129, 199, 132, 0.6)", // Semi-transparent green
+    backgroundColor: `${theme.colors.success}99`, // Using success color with 60% opacity
     borderWidth: 2,
     borderColor: theme.colors.success,
   },

@@ -3,6 +3,7 @@ import {
   SpotDifferenceLevel,
   DifferenceSpot,
 } from "../../../types";
+import { theme } from "../../../styles/theme";
 
 // Sample images (base64 encoded) for our spot the difference game
 // In a real app, you would have real images for different difficulties
@@ -52,7 +53,13 @@ export const generateSpotDifferenceLevel = (
       const y =
         Math.floor(Math.random() * (imageSize.height - padding * 2)) + padding;
 
-      spot = { x, y, radius, isFound: false };
+      spot = {
+        id: `spot-${i}-${attempts}`,
+        x,
+        y,
+        radius,
+        isFound: false,
+      };
 
       // Check if this spot overlaps with any existing spot
       const overlaps = differences.some((existingSpot) => {
@@ -78,11 +85,13 @@ export const generateSpotDifferenceLevel = (
   const image2 = generateModifiedSVG(baseImage, differences, imageSize);
 
   return {
-    image1:
+    imageA:
       "data:image/svg+xml;base64," + Buffer.from(image1).toString("base64"),
-    image2:
+    imageB:
       "data:image/svg+xml;base64," + Buffer.from(image2).toString("base64"),
     differences,
+    difficulty,
+    id: `level-${Date.now()}`,
   };
 };
 
@@ -96,10 +105,10 @@ const generateBaseSVG = (size: { width: number; height: number }): string => {
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
 
   // Add background
-  svg += `<rect width="${width}" height="${height}" fill="#f5f5f5"/>`;
+  svg += `<rect width="${width}" height="${height}" fill="${theme.colors.backgroundLight}"/>`;
 
   // Add grid lines
-  svg += `<g stroke="#e0e0e0" stroke-width="1">`;
+  svg += `<g stroke="${theme.colors.border}" stroke-width="1">`;
   for (let i = 0; i < width; i += 20) {
     svg += `<line x1="${i}" y1="0" x2="${i}" y2="${height}"/>`;
   }
@@ -110,22 +119,22 @@ const generateBaseSVG = (size: { width: number; height: number }): string => {
 
   // Add a house-like structure
   svg += `
-    <rect x="100" y="150" width="200" height="120" fill="#e57373"/>
-    <polygon points="100,150 200,80 300,150" fill="#ef9a9a"/>
-    <rect x="150" y="200" width="40" height="70" fill="#795548"/>
-    <rect x="220" y="180" width="30" height="30" fill="#90caf9"/>
-    <rect x="120" y="180" width="30" height="30" fill="#90caf9"/>
+    <rect x="100" y="150" width="200" height="120" fill="${theme.colors.error}"/>
+    <polygon points="100,150 200,80 300,150" fill="${theme.colors.primaryLight}"/>
+    <rect x="150" y="200" width="40" height="70" fill="${theme.colors.accent}"/>
+    <rect x="220" y="180" width="30" height="30" fill="${theme.colors.secondary}"/>
+    <rect x="120" y="180" width="30" height="30" fill="${theme.colors.secondary}"/>
   `;
 
   // Add a tree
   svg += `
-    <rect x="50" y="200" width="20" height="70" fill="#795548"/>
-    <circle cx="60" cy="170" r="30" fill="#81c784"/>
+    <rect x="50" y="200" width="20" height="70" fill="${theme.colors.accent}"/>
+    <circle cx="60" cy="170" r="30" fill="${theme.colors.success}"/>
   `;
 
   // Add a sun
   svg += `
-    <circle cx="320" cy="60" r="30" fill="#ffeb3b"/>
+    <circle cx="320" cy="60" r="30" fill="${theme.colors.accent}"/>
   `;
 
   // Close SVG
@@ -159,22 +168,19 @@ const generateModifiedSVG = (
     switch (modType) {
       case 0: // Add a star
         modification = `
-          <polygon 
-            points="${x},${y - radius} ${x + radius / 2},${y - radius / 3} ${
-          x + radius
-        },${y - radius} ${x + radius / 3},${y - radius / 2} ${
+          <path d="M${x},${y - radius} ${x + radius / 3},${y - radius / 2} ${
           x + radius
         },${y} ${x},${y + radius / 3} ${x - radius},${y} ${x - radius / 3},${
           y - radius / 2
         } ${x - radius},${y - radius} ${x - radius / 2},${y - radius / 3}"
-            fill="#ffd54f"
+            fill="${theme.colors.accent}"
           />
         `;
         break;
       case 1: // Change a color
         // Add a colored circle
         modification = `
-          <circle cx="${x}" cy="${y}" r="${radius}" fill="#ce93d8"/>
+          <circle cx="${x}" cy="${y}" r="${radius}" fill="${theme.colors.primary}"/>
         `;
         break;
       case 2: // Add a small cloud
@@ -182,29 +188,37 @@ const generateModifiedSVG = (
           <g transform="translate(${x - radius}, ${y - radius})">
             <circle cx="${radius * 0.7}" cy="${radius}" r="${
           radius * 0.7
-        }" fill="white"/>
+        }" fill="${theme.colors.textLight}"/>
             <circle cx="${radius * 1.4}" cy="${radius}" r="${
           radius * 0.8
-        }" fill="white"/>
+        }" fill="${theme.colors.textLight}"/>
             <circle cx="${radius}" cy="${radius * 0.7}" r="${
           radius * 0.6
-        }" fill="white"/>
+        }" fill="${theme.colors.textLight}"/>
           </g>
         `;
         break;
       case 3: // Add a flower
         modification = `
           <g transform="translate(${x}, ${y})">
-            <circle cx="0" cy="0" r="${radius / 2}" fill="#f06292"/>
-            <circle cx="${radius / 2}" cy="0" r="${radius / 3}" fill="#f06292"/>
-            <circle cx="${-radius / 2}" cy="0" r="${
-          radius / 3
-        }" fill="#f06292"/>
-            <circle cx="0" cy="${radius / 2}" r="${radius / 3}" fill="#f06292"/>
-            <circle cx="0" cy="${-radius / 2}" r="${
-          radius / 3
-        }" fill="#f06292"/>
-            <circle cx="0" cy="0" r="${radius / 4}" fill="#ffeb3b"/>
+            <circle cx="0" cy="0" r="${radius / 2}" fill="${
+          theme.colors.primary
+        }"/>
+            <circle cx="${radius / 2}" cy="0" r="${radius / 3}" fill="${
+          theme.colors.primary
+        }"/>
+            <circle cx="${-radius / 2}" cy="0" r="${radius / 3}" fill="${
+          theme.colors.primary
+        }"/>
+            <circle cx="0" cy="${radius / 2}" r="${radius / 3}" fill="${
+          theme.colors.primary
+        }"/>
+            <circle cx="0" cy="${-radius / 2}" r="${radius / 3}" fill="${
+          theme.colors.primary
+        }"/>
+            <circle cx="0" cy="0" r="${radius / 4}" fill="${
+          theme.colors.accent
+        }"/>
           </g>
         `;
         break;
@@ -213,10 +227,10 @@ const generateModifiedSVG = (
           <g transform="translate(${x}, ${y})">
             <path d="M0,0 Q${radius},${-radius / 2} ${
           radius * 2
-        },0 Q${radius},${radius / 2} 0,0 Z" fill="#90caf9"/>
+        },0 Q${radius},${radius / 2} 0,0 Z" fill="${theme.colors.secondary}"/>
             <circle cx="${radius * 2.2}" cy="${-radius * 0.1}" r="${
           radius / 4
-        }" fill="black"/>
+        }" fill="${theme.colors.text}"/>
           </g>
         `;
         break;

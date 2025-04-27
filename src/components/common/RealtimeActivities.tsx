@@ -1,9 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, Animated } from 'react-native';
-import { GameType, Difficulty } from '../../types';
-import { formatTime } from '../../utils/helpers';
-import { useWebSocket } from '../../context/WebSocketContext';
-import { useTheme } from '../../context/ThemeContext';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  Animated,
+} from "react-native";
+import { GameType, Difficulty } from "../../types";
+import { formatTime } from "../../utils/helpers";
+import { useWebSocket } from "../../context/WebSocketContext";
+import { theme } from "../../styles/theme";
 
 interface GameSessionActivity {
   id: number;
@@ -23,22 +30,24 @@ const MAX_ACTIVITIES = 5;
 const RealtimeActivities: React.FC = () => {
   const [activities, setActivities] = useState<GameSessionActivity[]>([]);
   const { addListener, removeListener, isConnected } = useWebSocket();
-  const { theme } = useTheme();
 
   useEffect(() => {
     // Only set up listeners for web platform
-    if (Platform.OS !== 'web') return;
+    if (Platform.OS !== "web") return;
 
     const handleGameSession = (data: GameSessionActivity) => {
       // Add animation value to the new activity
       const activityWithAnimation = {
         ...data,
-        opacity: new Animated.Value(0)
+        opacity: new Animated.Value(0),
       };
 
       // Add to activities list and limit to MAX_ACTIVITIES
-      setActivities(prev => {
-        const newActivities = [activityWithAnimation, ...prev].slice(0, MAX_ACTIVITIES);
+      setActivities((prev) => {
+        const newActivities = [activityWithAnimation, ...prev].slice(
+          0,
+          MAX_ACTIVITIES
+        );
         return newActivities;
       });
 
@@ -54,25 +63,34 @@ const RealtimeActivities: React.FC = () => {
     };
 
     // Add WebSocket event listener
-    addListener('game_session', handleGameSession);
+    addListener("game_session", handleGameSession);
 
     // Cleanup
     return () => {
-      removeListener('game_session', handleGameSession);
+      removeListener("game_session", handleGameSession);
     };
   }, [addListener, removeListener]);
 
   // Only show on web and when connected
-  if (Platform.OS !== 'web' || !isConnected) {
+  if (Platform.OS !== "web" || !isConnected) {
     return null;
   }
 
   // If no activities yet, show a message
   if (activities.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.cardBackground }]}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Recent Activity</Text>
-        <Text style={[styles.emptyMessage, { color: theme.colors.textSecondary }]}>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: theme.colors.cardBackground },
+        ]}
+      >
+        <Text style={[styles.title, { color: theme.colors.text }]}>
+          Recent Activity
+        </Text>
+        <Text
+          style={[styles.emptyMessage, { color: theme.colors.textSecondary }]}
+        >
           Activity will appear here as players complete games
         </Text>
       </View>
@@ -80,30 +98,49 @@ const RealtimeActivities: React.FC = () => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.cardBackground }]}>
-      <Text style={[styles.title, { color: theme.colors.text }]}>Recent Activity</Text>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.colors.cardBackground },
+      ]}
+    >
+      <Text style={[styles.title, { color: theme.colors.text }]}>
+        Recent Activity
+      </Text>
       <ScrollView style={styles.scrollContainer}>
-        {activities.map(activity => (
+        {activities.map((activity) => (
           <Animated.View
             key={activity.id}
             style={[
               styles.activityItem,
-              { opacity: activity.opacity, borderBottomColor: theme.colors.border }
+              {
+                opacity: activity.opacity,
+                borderBottomColor: theme.colors.border,
+              },
             ]}
           >
             <View style={styles.activityHeader}>
               <Text style={[styles.gameType, { color: theme.colors.primary }]}>
                 {activity.game_type}
               </Text>
-              <Text style={[styles.timeAgo, { color: theme.colors.textSecondary }]}>
+              <Text
+                style={[styles.timeAgo, { color: theme.colors.textSecondary }]}
+              >
                 Just now
               </Text>
             </View>
             <View style={styles.activityDetails}>
-              <Text style={[styles.difficultyText, { color: theme.colors.text }]}>
+              <Text
+                style={[styles.difficultyText, { color: theme.colors.text }]}
+              >
                 {activity.difficulty}
               </Text>
-              <Text style={[styles.statsText, { color: theme.colors.textSecondary }]}>
+              <Text
+                style={[
+                  styles.statsText,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
                 {activity.moves} moves • {formatTime(activity.time_taken)}
               </Text>
               <Text
@@ -112,11 +149,11 @@ const RealtimeActivities: React.FC = () => {
                   {
                     color: activity.completed
                       ? theme.colors.success
-                      : theme.colors.error
-                  }
+                      : theme.colors.error,
+                  },
                 ]}
               >
-                {activity.completed ? '✓ Completed' : '× Gave up'}
+                {activity.completed ? "✓ Completed" : "× Gave up"}
               </Text>
             </View>
           </Animated.View>
@@ -131,7 +168,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     margin: 16,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -139,7 +176,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 12,
   },
   scrollContainer: {
@@ -151,13 +188,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   activityHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 4,
   },
   gameType: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 16,
   },
   timeAgo: {
@@ -176,10 +213,10 @@ const styles = StyleSheet.create({
   },
   completionStatus: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   emptyMessage: {
-    textAlign: 'center',
+    textAlign: "center",
     padding: 20,
     fontSize: 14,
   },

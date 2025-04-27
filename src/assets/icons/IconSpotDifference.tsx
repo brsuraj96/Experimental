@@ -1,12 +1,16 @@
-import React from 'react';
-import Svg, { Rect, Circle, G, Path } from 'react-native-svg';
+import React from "react";
+import Svg, { Rect, Circle, G, Path } from "react-native-svg";
+import { theme } from "../../styles/theme";
 
 interface IconProps {
   size?: number;
   color?: string;
 }
 
-const IconSpotDifference: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
+const IconSpotDifference: React.FC<IconProps> = ({
+  size = 24,
+  color = theme.colors.white,
+}) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <G>
@@ -21,7 +25,7 @@ const IconSpotDifference: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' 
           strokeWidth="1.5"
           fill="none"
         />
-        
+
         {/* Right image frame */}
         <Rect
           x="14"
@@ -33,7 +37,7 @@ const IconSpotDifference: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' 
           strokeWidth="1.5"
           fill="none"
         />
-        
+
         {/* VS text */}
         <Path
           d="M12 10L11 14"
@@ -47,14 +51,14 @@ const IconSpotDifference: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' 
           strokeWidth="1.5"
           strokeLinecap="round"
         />
-        
+
         {/* Left image content (same in both) */}
         <Circle cx="4" cy="8" r="1" fill={color} />
         <Circle cx="8" cy="8" r="1" fill={color} />
         <Circle cx="6" cy="11" r="1" fill={color} />
         <Circle cx="4" cy="14" r="1" fill={color} />
         <Circle cx="8" cy="14" r="1" fill={color} />
-        
+
         {/* Right image content (with one difference) */}
         <Circle cx="16" cy="8" r="1" fill={color} />
         <Circle cx="20" cy="8" r="1" fill={color} />
@@ -65,9 +69,16 @@ const IconSpotDifference: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' 
           d="M20 14L20.5 13L21 14L20 14.5L21 15L20 14.5L19 15L20 14.5L19 14L20 13.5L20 14Z"
           fill={color}
         />
-        
+
         {/* Magnifying glass highlighting the difference */}
-        <Circle cx="19.5" cy="14.5" r="2" stroke={color} strokeWidth="0.8" fill="none" />
+        <Circle
+          cx="19.5"
+          cy="14.5"
+          r="2"
+          stroke={color}
+          strokeWidth="0.8"
+          fill="none"
+        />
         <Path
           d="M21 16L22 17"
           stroke={color}

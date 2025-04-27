@@ -6,17 +6,22 @@ import { ThemeProvider } from "./src/context/ThemeContext";
 import { GameProvider } from "./src/context/GameContext";
 import { WebSocketProvider } from "./src/context/WebSocketContext";
 import { Provider as PaperProvider } from "react-native-paper";
-import { theme } from "./src/styles/theme";
+import { theme } from "styles/theme";
 import "setimmediate";
 
 const App = () => {
   // Create app content
   const AppContent = () => (
-    <PaperProvider>
-      <ThemeProvider>
+    <ThemeProvider>
+      <PaperProvider>
         <GameProvider>
           <NavigationContainer>
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView
+              style={[
+                styles.container,
+                { backgroundColor: theme.colors.background },
+              ]}
+            >
               <StatusBar
                 barStyle="light-content"
                 backgroundColor={theme.colors.background}
@@ -25,10 +30,9 @@ const App = () => {
             </SafeAreaView>
           </NavigationContainer>
         </GameProvider>
-      </ThemeProvider>
-    </PaperProvider>
+      </PaperProvider>
+    </ThemeProvider>
   );
-
   // Add WebSocketProvider for web platform only
   if (Platform.OS === "web") {
     return (
@@ -45,8 +49,6 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
 });
-
 export default App;

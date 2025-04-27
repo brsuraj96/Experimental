@@ -1,12 +1,16 @@
-import React from 'react';
-import Svg, { Path, G, Circle, Text } from 'react-native-svg';
+import React from "react";
+import Svg, { Path, G, Circle, Text } from "react-native-svg";
+import { theme } from "../../styles/theme";
 
 interface IconProps {
   size?: number;
   color?: string;
 }
 
-const IconTrivia: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
+const IconTrivia: React.FC<IconProps> = ({
+  size = 24,
+  color = theme.colors.white,
+}) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <G>
@@ -19,7 +23,7 @@ const IconTrivia: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
           strokeWidth="1.5"
           fill="none"
         />
-        
+
         {/* Question mark */}
         <Path
           d="M12 17V16.5"
@@ -33,7 +37,7 @@ const IconTrivia: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
           strokeWidth="1.5"
           strokeLinecap="round"
         />
-        
+
         {/* Multiple choice options */}
         <G>
           <Circle cx="6" cy="20" r="1" fill={color} />
@@ -43,12 +47,12 @@ const IconTrivia: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
             fontSize="2"
             fill={color}
             textAnchor="start"
-            dominantBaseline="middle"
+            alignmentBaseline="middle"
           >
             A
           </Text>
         </G>
-        
+
         <G>
           <Circle cx="12" cy="20" r="1" fill={color} />
           <Text
@@ -57,12 +61,12 @@ const IconTrivia: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
             fontSize="2"
             fill={color}
             textAnchor="start"
-            dominantBaseline="middle"
+            alignmentBaseline="middle"
           >
             B
           </Text>
         </G>
-        
+
         <G>
           <Circle cx="18" cy="20" r="1" fill={color} />
           <Text
@@ -71,7 +75,7 @@ const IconTrivia: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF' }) => {
             fontSize="2"
             fill={color}
             textAnchor="start"
-            dominantBaseline="middle"
+            alignmentBaseline="middle"
           >
             C
           </Text>

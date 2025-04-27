@@ -11,6 +11,7 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList, GameType, Difficulty } from "../types";
 import { theme } from "../styles/theme";
+import { useTheme } from "../context/ThemeContext";
 import Header from "../components/common/Header";
 import SudokuGame from "../components/games/sudoku/SudokuGame";
 import SlideTilesGame from "../components/games/slideTiles/SlideTilesGame";
@@ -38,6 +39,7 @@ const GameScreen = () => {
   const [moves, setMoves] = useState<number>(0);
   const [isGameCompleted, setIsGameCompleted] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState(false);
+  const { currentTheme } = useTheme();
 
   const isLandscape = orientation === "landscape";
 
@@ -200,7 +202,12 @@ const GameScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: currentTheme.colors.background },
+      ]}
+    >
       <Header
         title={gameType}
         subtitle={difficulty}
@@ -244,7 +251,6 @@ const GameScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   gameContainer: {
     flex: 1,

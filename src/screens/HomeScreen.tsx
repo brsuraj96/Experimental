@@ -10,7 +10,12 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList, GameType, Difficulty, GameInfo } from "../types";
+// import Animated, {
+//   interpolateColor,
+//   useAnimatedStyle,
+// } from "react-native-reanimated";
 import { theme } from "../styles/theme";
+import { useTheme } from "../context/ThemeContext";
 import GameCard from "../components/common/GameCard";
 import RealtimeActivities from "../components/common/RealtimeActivities";
 import useOrientation from "../hooks/useOrientation";
@@ -31,78 +36,78 @@ const games: GameInfo[] = [
   {
     id: GameType.SUDOKU,
     title: "Sudoku",
-    description: "Classic number logic puzzle",
-    color: "#FF6F61",
+    description: "Classic number puzzle",
+    color: theme.colors.primary,
     implemented: true,
   },
   {
     id: GameType.SLIDE_TILES,
     title: "Slide Tiles",
-    description: "Rearrange tiles to solve the puzzle",
-    color: "#4DD0E1",
+    description: "Arrange tiles in order",
+    color: theme.colors.accent,
     implemented: true,
   },
   {
     id: GameType.FLOW_FREE,
     title: "Flow Free",
     description: "Connect matching colors",
-    color: "#81C784",
-    implemented: false,
+    color: theme.colors.success,
+    implemented: true,
   },
   {
     id: GameType.CROSSWORD,
     title: "Crossword",
     description: "Classic word puzzle",
-    color: "#FFEB3B",
+    color: theme.colors.secondary,
     implemented: true,
   },
   {
     id: GameType.WORDSEARCH,
     title: "Word Search",
-    description: "Classic word puzzle",
-    color: "#FFEB3B",
+    description: "Find hidden words",
+    color: theme.colors.primaryLight,
     implemented: true,
   },
   {
     id: GameType.JIGSAW,
     title: "Jigsaw",
     description: "Piece together the image",
-    color: "#9C27B0",
+    color: theme.colors.accent,
     implemented: false,
   },
   {
     id: GameType.MATCHSTICK,
     title: "Matchstick",
     description: "Visual logic puzzles with sticks",
-    color: "#FF9800",
+    color: theme.colors.secondary,
     implemented: true,
   },
   {
     id: GameType.SPOT_DIFFERENCE,
     title: "Spot the Difference",
     description: "Find differences between images",
-    color: "#E91E63",
+    color: theme.colors.error,
     implemented: true,
   },
   {
     id: GameType.WATER_FLOW,
     title: "Water Flow",
     description: "Guide water through pipes",
-    color: "#00BCD4",
+    color: theme.colors.water,
     implemented: true,
   },
   {
     id: GameType.TRIVIA,
     title: "Trivia",
     description: "Test your knowledge",
-    color: "#CDDC39",
+    color: theme.colors.success,
     implemented: false,
   },
   {
     id: GameType.RIDDLES,
     title: "Riddles",
     description: "Solve mind-bending riddles",
-    color: "#009688",
+    color: theme.colors.primary,
     implemented: false,
   },
 ];
@@ -138,6 +143,22 @@ const HomeScreen = () => {
   const navigation = useNavigation<GameNavigationProp>();
   const orientation = useOrientation();
   const { width } = useWindowDimensions();
+  const { currentTheme } = useTheme();
+
+  // const { transitionProgress } = useTheme();
+
+  // const animatedBackground = useAnimatedStyle(() => {
+  //   const backgroundColor = interpolateColor(
+  //     transitionProgress.value,
+  //     [0, 1, 2], // default, dark, soft
+  //     [
+  //       theme.colors.defaultTheme,
+  //       theme.colors.darkTheme,
+  //       theme.colors.softTheme,
+  //     ]
+  //   );
+  //   return { backgroundColor };
+  // });
 
   const handleSelectGame = (game: GameInfo) => {
     if (game.implemented) {
@@ -152,7 +173,40 @@ const HomeScreen = () => {
   const cardWidth =
     (width - theme.spacing.large * (numColumns + 1)) / numColumns;
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: currentTheme.colors.background,
+    },
+    header: {
+      paddingTop: theme.spacing.large,
+      paddingBottom: theme.spacing.medium,
+      paddingHorizontal: theme.spacing.large,
+      backgroundColor: currentTheme.colors.backgroundDark,
+    },
+    title: {
+      fontSize: 30,
+      fontWeight: "bold",
+      color: currentTheme.colors.text,
+      marginBottom: theme.spacing.small,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: currentTheme.colors.textSecondary,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingVertical: theme.spacing.medium,
+    },
+    gamesGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+    },
+  });
+
   return (
+    // <Animated.View style={[styles.container, animatedBackground]}>
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Puzzle World</Text>
@@ -186,39 +240,8 @@ const HomeScreen = () => {
         </View>
       </ScrollView>
     </View>
+    // </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  header: {
-    paddingTop: theme.spacing.large,
-    paddingBottom: theme.spacing.medium,
-    paddingHorizontal: theme.spacing.large,
-    backgroundColor: theme.colors.backgroundDark,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: "bold",
-    color: theme.colors.text,
-    marginBottom: theme.spacing.small,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingVertical: theme.spacing.medium,
-  },
-  gamesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-});
 
 export default HomeScreen;
