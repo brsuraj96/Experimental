@@ -5,6 +5,7 @@ import { Difficulty } from "../../../types";
 import Timer from "../../common/Timer";
 import CustomDropdown from "../../common/CustomDropdown";
 import { useTheme } from "../../../context/ThemeContext";
+import { Settings } from "../../../context/SettingsContext";
 
 interface GameHeaderProps {
   mistakes: number;
@@ -14,6 +15,7 @@ interface GameHeaderProps {
   isGameCompleted: boolean;
   showDifficultySelector?: boolean;
   onDifficultyChange?: (difficulty: Difficulty) => void;
+  settings: Settings;
 }
 
 const GameHeader: React.FC<GameHeaderProps> = ({
@@ -24,6 +26,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   isGameCompleted,
   showDifficultySelector = false,
   onDifficultyChange,
+  settings,
 }) => {
   const { currentTheme } = useTheme();
 
@@ -84,18 +87,20 @@ const GameHeader: React.FC<GameHeaderProps> = ({
           </Text>
         )}
       </View>
-      <View
-        style={[
-          styles.stat,
-          {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 4,
-          },
-        ]}
-      >
-        <Timer startTime={startTime} isRunning={!isGameCompleted} />
-      </View>
+      {settings.timer && (
+        <View
+          style={[
+            styles.stat,
+            {
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+            },
+          ]}
+        >
+          <Timer startTime={startTime} isRunning={!isGameCompleted} />
+        </View>
+      )}
     </View>
   );
 };

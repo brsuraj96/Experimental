@@ -6,12 +6,14 @@ import {
   Alert,
   Platform,
   TouchableWithoutFeedback,
+  Vibration,
 } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList, GameType, Difficulty } from "../types";
 import { theme } from "../styles/theme";
 import { useTheme } from "../context/ThemeContext";
+import { useSettings } from "../context/SettingsContext";
 import Header from "../components/common/Header";
 import SudokuGame from "../components/games/sudoku/SudokuGame";
 import SlideTilesGame from "../components/games/slideTiles/SlideTilesGame";
@@ -34,6 +36,7 @@ const GameScreen = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const orientation = useOrientation();
   const { playSound } = useSound();
+  const { settings } = useSettings();
 
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
   const [moves, setMoves] = useState<number>(0);
@@ -70,7 +73,15 @@ const GameScreen = () => {
 
   useEffect(() => {
     if (isGameCompleted) {
-      playSound("win");
+      if (settings.audioEffect) {
+        playSound("win");
+      }
+
+      if (settings.vibration) {
+        // Longer vibration for win
+        Vibration.vibrate([0, 100, 100, 100, 100, 100]);
+      }
+
       const endTime = Date.now();
       const timeTaken = Math.floor((endTime - gameStartTime) / 1000);
 
@@ -91,17 +102,27 @@ const GameScreen = () => {
     gameStartTime,
     moves,
     playSound,
+    settings.audioEffect,
+    settings.vibration,
   ]);
 
   const handleAddMove = () => {
     setMoves((prev) => prev + 1);
-    playSound("move");
+    if (settings.audioEffect) {
+      playSound("move");
+    }
+    if (settings.vibration) {
+      Vibration.vibrate(50);
+    }
   };
 
   const resetGame = () => {
     setMoves(0);
     setGameStartTime(Date.now());
     setIsGameCompleted(false);
+    if (settings.audioEffect) {
+      playSound("click");
+    }
     navigation.replace("Game", {
       gameType,
       difficulty,
@@ -110,23 +131,34 @@ const GameScreen = () => {
 
   const handlePause = () => {
     setIsPaused(true);
-    playSound("click");
+    if (settings.audioEffect) {
+      playSound("click");
+    }
   };
 
   const handleResume = () => {
     setIsPaused(false);
-    playSound("click");
+    if (settings.audioEffect) {
+      playSound("click");
+    }
   };
 
   const renderGame = () => {
+    // Common props for all games
+    const gameProps = {
+      difficulty,
+      onMove: handleAddMove,
+      onComplete: () => setIsGameCompleted(true),
+      orientation,
+      settings,
+      isPaused,
+    };
+
     switch (gameType) {
       case GameType.SUDOKU:
         return (
           <SudokuGame
-            difficulty={difficulty}
-            onMove={handleAddMove}
-            onComplete={() => setIsGameCompleted(true)}
-            orientation={orientation}
+            {...gameProps}
             startTime={gameStartTime}
             isGameCompleted={isGameCompleted}
             onDifficultyChange={(newDifficulty: Difficulty) => {
@@ -137,65 +169,19 @@ const GameScreen = () => {
           />
         );
       case GameType.SLIDE_TILES:
-        return (
-          <SlideTilesGame
-            difficulty={difficulty}
-            onMove={handleAddMove}
-            onComplete={() => setIsGameCompleted(true)}
-            orientation={orientation}
-          />
-        );
+        return <SlideTilesGame {...gameProps} />;
       case GameType.FLOW_FREE:
-        return (
-          <FlowFreeGame
-            difficulty={difficulty}
-            onMove={handleAddMove}
-            onComplete={() => setIsGameCompleted(true)}
-            orientation={orientation}
-          />
-        );
+        return <FlowFreeGame {...gameProps} />;
       case GameType.WATER_FLOW:
-        return (
-          <WaterFlowGame
-            difficulty={difficulty}
-            onMove={handleAddMove}
-            onComplete={() => setIsGameCompleted(true)}
-            orientation={orientation}
-          />
-        );
+        return <WaterFlowGame {...gameProps} />;
       case GameType.CROSSWORD:
-        return (
-          <CrosswordGame
-            difficulty={difficulty}
-            onMove={handleAddMove}
-            onComplete={() => setIsGameCompleted(true)}
-            orientation={orientation}
-          />
-        );
+        return <CrosswordGame {...gameProps} />;
       case GameType.SPOT_DIFFERENCE:
-        return (
-          <SpotDifferenceGame
-            difficulty={difficulty}
-            onMove={handleAddMove}
-            onComplete={() => setIsGameCompleted(true)}
-          />
-        );
+        return <SpotDifferenceGame {...gameProps} />;
       case GameType.MATCHSTICK:
-        return (
-          <MatchstickGame
-            difficulty={difficulty}
-            onMove={handleAddMove}
-            onComplete={() => setIsGameCompleted(true)}
-          />
-        );
+        return <MatchstickGame {...gameProps} />;
       case GameType.WORDSEARCH: // Used as placeholder for WordSearch since it's not in the enum
-        return (
-          <WordSearchGame
-            difficulty={difficulty}
-            onMove={handleAddMove}
-            onComplete={() => setIsGameCompleted(true)}
-          />
-        );
+        return <WordSearchGame {...gameProps} />;
       default:
         return <View />;
     }
@@ -213,6 +199,12 @@ const GameScreen = () => {
         subtitle={difficulty}
         showBackButton
         onBack={() => {
+          if (settings.audioEffect) {
+            playSound("click");
+          }
+          if (settings.vibration) {
+            Vibration.vibrate(50);
+          }
           Alert.alert(
             "Exit Game",
             "Are you sure you want to exit? Your progress will be lost.",
@@ -221,7 +213,15 @@ const GameScreen = () => {
                 text: "Cancel",
                 style: "cancel",
               },
-              { text: "Exit", onPress: () => navigation.goBack() },
+              {
+                text: "Exit",
+                onPress: () => {
+                  if (settings.audioEffect) {
+                    playSound("click");
+                  }
+                  navigation.goBack();
+                },
+              },
             ]
           );
         }}

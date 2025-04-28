@@ -91,7 +91,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           icon: "hand-point-up",
           type: "toggle",
           description:
-            "Lock a number by long pressing it, then use it for multiple cells",
+            "Long press a number to lock it, then use it to fill multiple cells",
         },
         {
           key: "highlightPeer",
