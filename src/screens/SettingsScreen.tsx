@@ -106,24 +106,31 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           label: "Highlight Same Numbers",
           icon: "equals",
           type: "toggle",
+          description:
+            "When selecting a cell with a number, highlight the same numbers throughout the grid",
         },
         {
           key: "autoRemoveNotes",
           label: "Auto-Remove Notes",
           icon: "eraser",
           type: "toggle",
+          description:
+            "When a number is placed correctly, remove all notes of the number in the peer cells",
         },
         {
           key: "autoComplete",
           label: "Auto Complete",
           icon: "magic",
           type: "toggle",
+          description:
+            "Automatically complete the game when only a few cells are not filled",
         },
         {
           key: "completionRate",
           label: "Puzzle Completion Rate",
           icon: "percentage",
           type: "toggle",
+          description: "Show puzzle completion rate at the start",
         },
         { key: "showScore", label: "Show Score", icon: "star", type: "toggle" },
         {
@@ -131,30 +138,37 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           label: "Tournament",
           icon: "trophy",
           type: "toggle",
+          description: "Participate in the tournament",
         },
         {
           key: "animatedScoring",
           label: "Animated Scoring",
           icon: "medal",
           type: "toggle",
+          description: "Show points earned for each move",
         },
         {
           key: "lightningMode",
           label: "Lightning Mode",
           icon: "bolt",
           type: "toggle",
+          description:
+            "Turn on the lightning mode, and enter the lightning mode by default every time you start a Sudoku",
         },
         {
           key: "remainingNumbers",
           label: "Remaining Numbers",
           icon: "list-ol",
           type: "toggle",
+          description: "Display the remaining count of each number",
         },
         {
           key: "smartHint",
           label: "Smart Hint",
           icon: "lightbulb",
           type: "toggle",
+          description:
+            "Smart hint can help you solve Sudoku problems, effective in Easy and Medium Sudoku",
         },
       ],
     },
@@ -227,7 +241,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           return (
             <Switch
               value={settings[item.key]}
-              onValueChange={(value) => updateSetting(item.key, value)}
+              onValueChange={(value) => {
+                updateSetting(item.key, value);
+                // Additional theme-specific handling is managed by ThemeContext
+              }}
               trackColor={{
                 false: currentTheme.colors.backgroundLight,
                 true: currentTheme.colors.primary,

@@ -3,49 +3,65 @@ import { View, StyleSheet, useWindowDimensions } from "react-native";
 import { SudokuBoard as SudokuBoardType } from "../../../types";
 import SudokuCell from "./SudokuCell";
 import { useTheme } from "../../../context/ThemeContext";
+import { Settings } from "../../../context/SettingsContext";
 
 interface SudokuBoardProps {
   board: SudokuBoardType;
   selectedCell: [number, number] | null;
   onCellPress: (row: number, col: number) => void;
+  settings: Settings;
+  lockedNumber: number | null;
 }
 
 const SudokuBoard: React.FC<SudokuBoardProps> = ({
   board,
   selectedCell,
   onCellPress,
+  settings,
+  lockedNumber,
 }) => {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
-
   const { currentTheme } = useTheme();
 
   const outerPadding = 32;
   const maxBoardSize = isLandscape ? 280 : 360;
   const totalSize = Math.min(width - outerPadding, maxBoardSize);
 
-  // There are 8 thin borders and 2 thick borders (between 3x3 blocks)
-  // const borderThin = 1;
   const borderThick = 2;
   const internalBorders = borderThick * 2;
   const boardSize = totalSize - internalBorders;
   const cellSize = boardSize / 9;
 
-  const shouldHighlight = (row: number, col: number): boolean => {
-    if (!selectedCell) return false;
-    const [selectedRow, selectedCol] = selectedCell;
+  const shouldHighlight = (rowIndex: number, colIndex: number): boolean => {
+    if (!selectedCell && !lockedNumber) return false;
 
-    const sameRow = row === selectedRow;
-    const sameCol = col === selectedCol;
-    const sameBlock =
-      Math.floor(row / 3) === Math.floor(selectedRow / 3) &&
-      Math.floor(col / 3) === Math.floor(selectedCol / 3);
+    // In number-first mode with locked number, don't highlight cells
+    if (settings.numberFirst && lockedNumber !== null) {
+      return false;
+    }
 
-    const selectedValue = board[selectedRow][selectedCol].value;
-    const sameValue =
-      selectedValue !== null && selectedValue === board[row][col].value;
+    // In cell-first mode or when no number is locked
+    if (selectedCell) {
+      const [selectedRow, selectedCol] = selectedCell;
+      const sameRow = settings.highlightPeer ? rowIndex === selectedRow : false;
+      const sameCol = settings.highlightPeer ? colIndex === selectedCol : false;
+      const sameBlock = settings.highlightPeer
+        ? Math.floor(rowIndex / 3) === Math.floor(selectedRow / 3) &&
+          Math.floor(colIndex / 3) === Math.floor(selectedCol / 3)
+        : false;
 
-    return sameRow || sameCol || sameBlock || sameValue;
+      const selectedValue = board[selectedRow][selectedCol].value;
+      const sameValue = settings.highlightSameNumbers
+        ? selectedValue !== null &&
+          board[rowIndex][colIndex].value !== null &&
+          board[rowIndex][colIndex].value === selectedValue
+        : false;
+
+      return sameRow || sameCol || sameBlock || sameValue;
+    }
+
+    return false;
   };
 
   const isSelectedCell = (rowIndex: number, colIndex: number) => {
@@ -57,13 +73,33 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({
   };
 
   const isSimilarValue = (rowIndex: number, colIndex: number) => {
-    const selectedValue = selectedCell
-      ? board[selectedCell[0]][selectedCell[1]].value
-      : null;
+    if (!settings.highlightSameNumbers) return false;
+
+    // In number-first mode with locked number
+    if (settings.numberFirst && lockedNumber !== null) {
+      return board[rowIndex][colIndex].value === lockedNumber;
+    }
+
+    // In cell-first mode
+    if (selectedCell) {
+      const selectedValue = board[selectedCell[0]][selectedCell[1]].value;
+      return (
+        selectedValue !== null &&
+        board[rowIndex][colIndex].value !== null &&
+        board[rowIndex][colIndex].value === selectedValue
+      );
+    }
+
+    return false;
+  };
+
+  const isLockedNumberCell = (rowIndex: number, colIndex: number) => {
+    if (!settings.numberFirst || lockedNumber === null) return false;
+
     return (
-      selectedValue !== null &&
       board[rowIndex][colIndex].value !== null &&
-      board[rowIndex][colIndex].value === selectedValue
+      board[rowIndex][colIndex].value === lockedNumber &&
+      !board[rowIndex][colIndex].isError
     );
   };
 
@@ -88,6 +124,7 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({
             const isSelected = isSelectedCell(rowIndex, colIndex);
             const isHighlighted = shouldHighlight(rowIndex, colIndex);
             const similarValue = isSimilarValue(rowIndex, colIndex);
+            const isLocked = isLockedNumberCell(rowIndex, colIndex);
 
             return (
               <SudokuCell
@@ -99,8 +136,15 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({
                 isHighlighted={isHighlighted}
                 isError={cell.isError}
                 isSimilarValue={similarValue}
+                isLockedNumber={isLocked}
                 size={cellSize}
                 onPress={() => onCellPress(rowIndex, colIndex)}
+                onFillNumber={
+                  lockedNumber
+                    ? (num) => onCellPress(rowIndex, colIndex)
+                    : undefined
+                }
+                lockedNumber={lockedNumber}
                 rightBorder={rightBorder}
                 bottomBorder={bottomBorder}
               />

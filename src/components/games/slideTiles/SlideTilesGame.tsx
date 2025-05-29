@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Vibration,
+} from "react-native";
 import { Difficulty } from "../../../types";
 import SlideTilesBoard from "./SlideTilesBoard";
 import {
@@ -12,12 +18,14 @@ import {
 } from "./logic";
 import { theme } from "../../../styles/theme";
 import useSound from "../../../hooks/useSound";
+import { Settings } from "../../../context/SettingsContext";
 
 interface SlideTilesGameProps {
   difficulty: Difficulty;
   onMove: () => void;
   onComplete: () => void;
   orientation: "portrait" | "landscape";
+  settings: Settings;
 }
 
 const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
@@ -25,29 +33,104 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
   onMove,
   onComplete,
   orientation,
+  settings,
 }) => {
   const { playSound } = useSound();
   const boardSize = getBoardSize(difficulty);
   const [board, setBoard] = useState(() => generateBoard(boardSize));
   const [moves, setMoves] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
+  const [time, setTime] = useState(0);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Timer implementation based on settings
   useEffect(() => {
-    resetGame();
+    // Calculate if the board is solved
+    const boardSolved = isSolved(board);
+
+    // Only start/stop the timer when these conditions change
+    if (settings.timer && gameStarted && !boardSolved) {
+      // Start the timer if it's not already running
+      if (!timerRef.current) {
+        timerRef.current = setInterval(() => {
+          setTime((prev) => prev + 1);
+        }, 1000);
+      }
+    } else if (timerRef.current) {
+      // Stop the timer if it's running
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [settings.timer, gameStarted, board]);
+
+  // Initialize the game when difficulty changes
+  useEffect(() => {
+    const size = getBoardSize(difficulty);
+    const newBoard = generateBoard(size);
+    setBoard(newBoard);
+    setMoves(0);
+    setTime(0);
+    setGameStarted(false);
+    setCompletionPercentage(0);
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
   }, [difficulty]);
 
   useEffect(() => {
     if (gameStarted && isSolved(board)) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
       onComplete();
     }
   }, [board, gameStarted, onComplete]);
+
+  // Calculate completion percentage
+  useEffect(() => {
+    if (settings.completionRate && gameStarted) {
+      const totalTiles = boardSize * boardSize;
+      let correctTiles = 0;
+
+      for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+          const expectedValue = row * boardSize + col + 1;
+          // The last tile should be 0 (empty)
+          const expected =
+            row === boardSize - 1 && col === boardSize - 1 ? 0 : expectedValue;
+
+          if (board[row][col] === expected) {
+            correctTiles++;
+          }
+        }
+      }
+
+      setCompletionPercentage(Math.floor((correctTiles / totalTiles) * 100));
+    }
+  }, [board, settings.completionRate, gameStarted, boardSize]);
 
   const resetGame = () => {
     const size = getBoardSize(difficulty);
     const newBoard = generateBoard(size);
     setBoard(newBoard);
     setMoves(0);
+    setTime(0);
     setGameStarted(false);
+    setCompletionPercentage(0);
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
   };
 
   const startGame = () => {
@@ -64,13 +147,36 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
       setBoard(newBoard);
       setMoves(moves + 1);
       onMove();
-      playSound("move");
+
+      // Apply settings for sound and vibration
+      if (settings.audioEffect) {
+        playSound("move");
+      }
+
+      if (settings.vibration) {
+        Vibration.vibrate(50);
+      }
     } else {
-      playSound("error");
+      if (settings.audioEffect) {
+        playSound("error");
+      }
+
+      if (settings.vibration) {
+        Vibration.vibrate([0, 50, 50, 50]);
+      }
     }
   };
 
   const isLandscape = orientation === "landscape";
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
+  };
 
   return (
     <View style={[styles.container, isLandscape && styles.landscapeContainer]}>
@@ -93,24 +199,65 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
             <Text style={styles.infoValue}>{moves}</Text>
           </View>
 
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Size</Text>
-            <Text style={styles.infoValue}>
-              {boardSize}×{boardSize}
-            </Text>
-          </View>
+          {settings.timer && (
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Time</Text>
+              <Text style={styles.infoValue}>{formatTime(time)}</Text>
+            </View>
+          )}
+
+          {!settings.timer && (
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Size</Text>
+              <Text style={styles.infoValue}>
+                {boardSize}×{boardSize}
+              </Text>
+            </View>
+          )}
         </View>
 
+        {settings.completionRate && gameStarted && (
+          <View style={styles.completionContainer}>
+            <Text style={styles.completionLabel}>Completion</Text>
+            <View style={styles.progressBarContainer}>
+              <View
+                style={[
+                  styles.progressBar,
+                  { width: `${completionPercentage}%` },
+                ]}
+              />
+            </View>
+            <Text style={styles.completionValue}>{completionPercentage}%</Text>
+          </View>
+        )}
+
         {!gameStarted ? (
-          <TouchableOpacity style={styles.startButton} onPress={startGame}>
+          <TouchableOpacity
+            style={[
+              styles.startButton,
+              settings.lightningMode && styles.lightningButton,
+            ]}
+            onPress={startGame}
+          >
             <Text style={styles.startButtonIcon}>▶</Text>
-            <Text style={styles.startButtonText}>Start Game</Text>
+            <Text style={styles.startButtonText}>
+              {settings.lightningMode ? "Lightning Mode" : "Start Game"}
+            </Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={styles.resetButton} onPress={resetGame}>
             <Text style={styles.resetButtonIcon}>↻</Text>
             <Text style={styles.resetButtonText}>Reset</Text>
           </TouchableOpacity>
+        )}
+
+        {settings.showScore && gameStarted && (
+          <View style={styles.scoreContainer}>
+            <Text style={styles.scoreLabel}>Score</Text>
+            <Text style={styles.scoreValue}>
+              {Math.max(0, 1000 - moves * 10 - time * 2)}
+            </Text>
+          </View>
         )}
 
         <View style={styles.instructionsContainer}>
@@ -181,6 +328,52 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: theme.colors.text,
   },
+  completionContainer: {
+    backgroundColor: theme.colors.backgroundLight,
+    padding: theme.spacing.medium,
+    borderRadius: 10,
+    marginBottom: theme.spacing.medium,
+    alignItems: "center",
+  },
+  completionLabel: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginBottom: 8,
+  },
+  progressBarContainer: {
+    width: "100%",
+    height: 10,
+    backgroundColor: theme.colors.backgroundDark,
+    borderRadius: 5,
+    overflow: "hidden",
+    marginBottom: 4,
+  },
+  progressBar: {
+    height: "100%",
+    backgroundColor: theme.colors.primary,
+  },
+  completionValue: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: theme.colors.text,
+  },
+  scoreContainer: {
+    backgroundColor: theme.colors.backgroundLight,
+    padding: theme.spacing.medium,
+    borderRadius: 10,
+    marginBottom: theme.spacing.medium,
+    alignItems: "center",
+  },
+  scoreLabel: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginBottom: 4,
+  },
+  scoreValue: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: theme.colors.primary,
+  },
   startButton: {
     backgroundColor: theme.colors.primary,
     flexDirection: "row",
@@ -189,6 +382,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     marginBottom: theme.spacing.medium,
+  },
+  lightningButton: {
+    backgroundColor: "#FF9800", // Orange color for lightning mode
   },
   startButtonIcon: {
     fontSize: 20,

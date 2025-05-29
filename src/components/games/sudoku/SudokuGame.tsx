@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Alert } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, StyleSheet, Alert, Vibration } from "react-native";
 import { Difficulty, SudokuBoard } from "../../../types";
 import SudokuBoardComponent from "./SudokuBoard";
 import SudokuControls from "./SudokuControls";
@@ -12,6 +12,7 @@ import {
 import { useTheme } from "../../../context/ThemeContext";
 import useSound from "../../../hooks/useSound";
 import GameHeader from "./GameHeader";
+import { Settings } from "../../../context/SettingsContext";
 
 interface SudokuGameProps {
   difficulty: Difficulty;
@@ -21,6 +22,8 @@ interface SudokuGameProps {
   startTime: number;
   isGameCompleted: boolean;
   onDifficultyChange: (difficulty: Difficulty) => void;
+  settings: Settings;
+  isPaused?: boolean;
 }
 
 const SudokuGame: React.FC<SudokuGameProps> = ({
@@ -31,9 +34,10 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   startTime,
   isGameCompleted,
   onDifficultyChange,
+  settings,
+  isPaused,
 }) => {
   const { currentTheme } = useTheme();
-
   const { playSound } = useSound();
   const [board, setBoard] = useState<SudokuBoard>(() =>
     generateSudoku(difficulty)
@@ -41,6 +45,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   const [selectedCell, setSelectedCell] = useState<[number, number] | null>(
     null
   );
+  const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
+  const [lockedNumber, setLockedNumber] = useState<number | null>(null);
   const [isNoteMode, setIsNoteMode] = useState(false);
   const [history, setHistory] = useState<
     Array<{ board: SudokuBoard; selected: [number, number] | null }>
@@ -50,6 +56,54 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   );
   const [mistakes, setMistakes] = useState(0);
   const [time, setTime] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Use settings to control timer
+  useEffect(() => {
+    if (!settings.timer || isPaused || isGameCompleted) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+
+    timerRef.current = setInterval(() => {
+      setTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [settings.timer, isPaused, isGameCompleted]);
+
+  // Use settings to control mistake limit
+  useEffect(() => {
+    if (settings.mistakeLimit && mistakes >= 3) {
+      Alert.alert(
+        "Game Over",
+        "You have made 3 mistakes. Game over.",
+        [{ text: "OK", onPress: () => onComplete() }],
+        { cancelable: false }
+      );
+    }
+  }, [mistakes, settings.mistakeLimit, onComplete]);
+
+  // We don't need a separate effect for autoRemoveNotes
+  // This is now handled directly in the handleNumberPress function
+  // when a number is placed on the board
+
+  // Use settings to control autoComplete
+  useEffect(() => {
+    if (!settings.autoComplete) return;
+
+    if (isGameComplete(board)) {
+      onComplete();
+    }
+  }, [board, settings.autoComplete, onComplete]);
 
   const calculateRemainingNumbers = (currentBoard: SudokuBoard) => {
     const remaining = Array(9).fill(9);
@@ -107,15 +161,19 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     const newBoard = generateSudoku(difficulty);
     setBoard(newBoard);
     setSelectedCell(null);
+    setSelectedNumber(null);
+    setLockedNumber(null);
     setHistory([{ board: newBoard, selected: null }]);
+    setMistakes(0);
+    setTime(0);
   }, [difficulty]);
 
   // Check if game is completed
   useEffect(() => {
-    if (isGameComplete(board)) {
+    if (isGameComplete(board) && !isGameCompleted) {
       onComplete();
     }
-  }, [board, onComplete]);
+  }, [board, onComplete, isGameCompleted]);
 
   // Update the remaining numbers whenever the board changes
   useEffect(() => {
@@ -123,27 +181,64 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     setRemainingNumbers(remaining);
   }, [board]);
 
-  // Add timer effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTime((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const removeRelatedNotes = (
+    currentBoard: SudokuBoard,
+    row: number,
+    col: number,
+    number: number
+  ) => {
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const sameRow = r === row;
+        const sameCol = c === col;
+        const sameBlock =
+          Math.floor(r / 3) === Math.floor(row / 3) &&
+          Math.floor(c / 3) === Math.floor(col / 3);
 
-  const handleCellPress = (row: number, col: number) => {
-    playSound("click");
-    setSelectedCell([row, col]);
+        if (
+          (sameRow || sameCol || sameBlock) &&
+          currentBoard[r][c].value === null
+        ) {
+          currentBoard[r][c] = {
+            ...currentBoard[r][c],
+            notes: [...currentBoard[r][c].notes],
+          };
+          currentBoard[r][c].notes[number - 1] = false;
+        }
+      }
+    }
   };
 
-  const handleNumberPress = (number: number) => {
-    if (!selectedCell) return;
-
-    const [row, col] = selectedCell;
+  // Function to place a number on the board
+  const placeNumber = (number: number, row: number, col: number) => {
     const cell = board[row][col];
 
-    if (cell.isFixed) return;
+    // Handle self-correction in number-first mode
+    if (settings.numberFirst && cell.value === number) {
+      if (cell.isError) {
+        // Clear error number on second tap
+        const newBoard = [...board.map((r) => [...r])];
+        newBoard[row][col] = {
+          ...cell,
+          value: null,
+          notes: Array(9).fill(false),
+          isError: false,
+        };
+        setBoard(newBoard);
+        setHistory([...history, { board: newBoard, selected: [row, col] }]);
 
+        if (settings.audioEffect) {
+          playSound("click");
+        }
+        if (settings.vibration) {
+          Vibration.vibrate(50);
+        }
+        return;
+      }
+      return; // If correct number, do nothing
+    }
+
+    // Create a new board with the updated cell
     const newBoard = [...board.map((r) => [...r])];
 
     if (isNoteMode) {
@@ -167,24 +262,162 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
 
       if (!isValid) {
         setMistakes((prev) => prev + 1);
-        playSound("error");
+        if (settings.audioEffect) {
+          playSound("error");
+        }
+        if (settings.vibration) {
+          Vibration.vibrate([0, 100, 50, 100]); // Longer vibration for errors
+        }
       } else {
-        playSound("move");
+        if (settings.audioEffect) {
+          playSound("move");
+        }
+        if (settings.vibration) {
+          Vibration.vibrate(50);
+        }
+
+        // Auto-remove notes if enabled
+        if (settings.autoRemoveNotes) {
+          removeRelatedNotes(newBoard, row, col, number);
+        }
       }
     }
 
     setBoard(newBoard);
-    setHistory([...history, { board: newBoard, selected: selectedCell }]);
+    setHistory([...history, { board: newBoard, selected: [row, col] }]);
     onMove();
   };
 
-  const handleErasePress = () => {
+  const handleCellPress = (row: number, col: number) => {
+    if (isPaused) return;
+
+    if (settings.audioEffect) {
+      playSound("click");
+    }
+
+    if (settings.vibration) {
+      Vibration.vibrate(50);
+    }
+
+    // If in number first mode and a number is locked, place that number
+    if (settings.numberFirst && lockedNumber !== null) {
+      const cell = board[row][col];
+
+      // Don't allow placing numbers on fixed cells
+      if (cell.isFixed) return;
+
+      // Place the locked number
+      placeNumber(lockedNumber, row, col);
+    } else {
+      // Allow cell selection in both modes when no number is locked
+      setSelectedCell([row, col]);
+    }
+  };
+
+  const handleNumberPress = (number: number) => {
+    if (isPaused) return;
+
+    // If number first mode is enabled
+    if (settings.numberFirst) {
+      // If this number is already locked, unlock it
+      if (lockedNumber === number) {
+        setLockedNumber(null);
+        setSelectedNumber(null);
+
+        if (settings.audioEffect) {
+          playSound("click");
+        }
+
+        if (settings.vibration) {
+          Vibration.vibrate(50);
+        }
+      }
+      // If no number is locked, do nothing (require long press)
+      return;
+    }
+
+    // In cell first mode, proceed as before
     if (!selectedCell) return;
 
     const [row, col] = selectedCell;
     const cell = board[row][col];
 
     if (cell.isFixed) return;
+
+    // Use the placeNumber function to place the number
+    placeNumber(number, row, col);
+  };
+
+  // Handle long press on a number
+  const handleNumberLongPress = (number: number | null) => {
+    if (isPaused || !settings.numberFirst || number === null) return;
+
+    // Toggle the locked state
+    if (lockedNumber === number) {
+      setLockedNumber(null);
+      setSelectedNumber(null);
+
+      if (settings.audioEffect) {
+        playSound("click");
+      }
+
+      if (settings.vibration) {
+        Vibration.vibrate(50);
+      }
+    } else {
+      setLockedNumber(number);
+      setSelectedNumber(number);
+      setSelectedCell(null);
+
+      if (settings.audioEffect) {
+        playSound("click");
+      }
+
+      if (settings.vibration) {
+        Vibration.vibrate([0, 100, 50, 100]); // Double vibration to indicate lock
+      }
+    }
+  };
+
+  const handleErasePress = () => {
+    if (isPaused) return;
+
+    // In number first mode, clear the selected number when toggling notes
+    if (settings.numberFirst && selectedNumber !== null) {
+      setSelectedNumber(null);
+    }
+
+    // In number first mode, clear the selected number and locked number
+    if (
+      settings.numberFirst &&
+      (selectedNumber !== null || lockedNumber !== null)
+    ) {
+      setSelectedNumber(null);
+
+      // If there's a locked number, clear it
+      if (lockedNumber !== null) {
+        setLockedNumber(null);
+      }
+
+      if (settings.audioEffect) {
+        playSound("click");
+      }
+
+      if (settings.vibration) {
+        Vibration.vibrate(50);
+      }
+
+      return;
+    }
+
+    // In cell first mode, proceed as before
+    if (!selectedCell) return;
+
+    const [row, col] = selectedCell;
+    const cell = board[row][col];
+
+    // Don't allow erasing fixed cells or correct entries
+    if (cell.isFixed || (cell.value !== null && !cell.isError)) return;
 
     const newBoard = [...board.map((r) => [...r])];
     newBoard[row][col] = {
@@ -195,17 +428,51 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     };
 
     setBoard(newBoard);
+
+    // In number first mode, clear the selected number
+    if (settings.numberFirst) {
+      setSelectedNumber(null);
+    }
+
     setHistory([...history, { board: newBoard, selected: selectedCell }]);
-    playSound("click");
+
+    if (settings.audioEffect) {
+      playSound("click");
+    }
+
+    if (settings.vibration) {
+      Vibration.vibrate(50);
+    }
   };
 
   const handleNotesToggle = () => {
+    if (isPaused) return;
+
+    // In number first mode, clear the locked number when toggling notes
+    if (settings.numberFirst && lockedNumber !== null) {
+      setLockedNumber(null);
+      setSelectedNumber(null);
+    }
+
     setIsNoteMode(!isNoteMode);
-    playSound("click");
+
+    if (settings.audioEffect) {
+      playSound("click");
+    }
+
+    if (settings.vibration) {
+      Vibration.vibrate(50);
+    }
   };
 
   const handleUndoPress = () => {
-    if (history.length <= 1) return;
+    if (history.length <= 1 || isPaused) return;
+
+    // In number first mode, clear the locked number when undoing
+    if (settings.numberFirst && lockedNumber !== null) {
+      setLockedNumber(null);
+      setSelectedNumber(null);
+    }
 
     const newHistory = [...history];
     newHistory.pop();
@@ -214,11 +481,18 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     setBoard(previous.board);
     setSelectedCell(previous.selected);
     setHistory(newHistory);
-    playSound("click");
+
+    if (settings.audioEffect) {
+      playSound("click");
+    }
+
+    if (settings.vibration) {
+      Vibration.vibrate(50);
+    }
   };
 
   const handleHintPress = () => {
-    if (isGameComplete(board)) return;
+    if (isGameComplete(board) || isPaused) return;
 
     const hint = getHint(board);
     if (!hint) {
@@ -236,9 +510,24 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     };
 
     setBoard(newBoard);
+
+    // In number first mode, clear the locked number
+    if (settings.numberFirst && lockedNumber !== null) {
+      setLockedNumber(null);
+      setSelectedNumber(null);
+    }
+
     setSelectedCell([row, col]);
     setHistory([...history, { board: newBoard, selected: [row, col] }]);
-    playSound("hint");
+
+    if (settings.audioEffect) {
+      playSound("hint");
+    }
+
+    if (settings.vibration) {
+      Vibration.vibrate([0, 100, 50, 100]);
+    }
+
     onMove();
   };
 
@@ -289,17 +578,21 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
         isGameCompleted={isGameCompleted}
         showDifficultySelector
         onDifficultyChange={onDifficultyChange}
+        settings={settings}
       />
       <View style={isLandscape ? styles.landscapeBoard : styles.board}>
         <SudokuBoardComponent
           board={board}
           selectedCell={selectedCell}
           onCellPress={handleCellPress}
+          settings={settings}
+          lockedNumber={lockedNumber}
         />
       </View>
       <View style={isLandscape ? styles.landscapeControls : styles.controls}>
         <SudokuControls
           onNumberPress={handleNumberPress}
+          onNumberLongPress={handleNumberLongPress}
           onErasePress={handleErasePress}
           onNotesToggle={handleNotesToggle}
           onUndoPress={handleUndoPress}
@@ -312,6 +605,14 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
             selectedCell && isNoteMode
               ? getValidNumbersForNotes(board, selectedCell[0], selectedCell[1])
               : Array(9).fill(true)
+          }
+          selectedNumber={selectedNumber}
+          numberFirstMode={settings.numberFirst}
+          lockedNumber={lockedNumber}
+          disableNotesButton={
+            selectedCell
+              ? board[selectedCell[0]][selectedCell[1]].isFixed
+              : false
           }
         />
       </View>
