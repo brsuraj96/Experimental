@@ -614,6 +614,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
               ? board[selectedCell[0]][selectedCell[1]].isFixed
               : false
           }
+          settings={settings}
         />
       </View>
     </View>

@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
+import { Settings } from "../../../context/SettingsContext";
 import {
   View,
   TouchableOpacity,
@@ -33,6 +34,7 @@ interface SudokuControlsProps {
   numberFirstMode: boolean;
   lockedNumber: number | null;
   disableNotesButton: boolean;
+  settings: Settings;
 }
 
 const createStyles = (theme: any) =>
@@ -200,6 +202,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
     numberFirstMode,
     lockedNumber,
     disableNotesButton,
+    settings,
   }) => {
     const { currentTheme } = useTheme();
     const styles = useMemo(() => createStyles(currentTheme), [currentTheme]);
@@ -323,7 +326,6 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
       (number: number) => {
         const isDisabled = !validNumbers[number - 1];
         const isLocked = lockedNumber === number;
-        // Disable all numbers except the locked one when in number-first mode and a number is locked
         const isDisabledByLock =
           numberFirstMode && lockedNumber !== null && !isLocked;
         const remaining = remainingNumbers[number - 1] || 0;
@@ -433,7 +435,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
               >
                 {number}
               </Text>
-              {remaining > 0 && (
+              {settings.remainingNumbers && remaining > 0 && (
                 <Text style={styles.remainingText}>{remaining}</Text>
               )}
             </TouchableOpacity>
@@ -476,6 +478,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
         currentTheme.colors.primary,
         numberFirstMode,
         selectedNumber,
+        settings,
       ]
     );
 
@@ -504,12 +507,13 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
             text: "Erase",
             testID: "erase-button",
           })}
-          {renderActionButton({
-            icon: "lightbulb",
-            onPress: onHintPress,
-            text: "Hint",
-            testID: "hint-button",
-          })}
+          {settings.smartHint &&
+            renderActionButton({
+              icon: "lightbulb",
+              onPress: onHintPress,
+              text: "Hint",
+              testID: "hint-button",
+            })}
         </View>
       ),
       [
@@ -522,6 +526,9 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
         onHintPress,
         canUndo,
         disableNotesButton,
+        numberFirstMode,
+        lockedNumber,
+        settings.smartHint,
       ]
     );
 

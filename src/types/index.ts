@@ -89,8 +89,17 @@ export type WordSearchBoard = WordSearchCell[][];
 export interface WordSearchWord {
   word: string;
   isFound: boolean;
-  startCell?: { row: number; col: number };
-  endCell?: { row: number; col: number };
+  row: number;
+  col: number;
+  direction:
+    | "horizontal"
+    | "horizontal-reverse"
+    | "vertical"
+    | "vertical-reverse"
+    | "diagonal-right"
+    | "diagonal-left"
+    | "diagonal-right-reverse"
+    | "diagonal-left-reverse";
 }
 
 export interface WordSearchLevel {
@@ -229,6 +238,48 @@ export interface GameProgress {
     [Difficulty.EXPERT]: number;
   };
   [GameType.CROSSWORD]: {
+    [Difficulty.BEGINNER]: number;
+    [Difficulty.EASY]: number;
+    [Difficulty.MEDIUM]: number;
+    [Difficulty.HARD]: number;
+    [Difficulty.EXPERT]: number;
+  };
+  [GameType.WORDSEARCH]: {
+    [Difficulty.BEGINNER]: number;
+    [Difficulty.EASY]: number;
+    [Difficulty.MEDIUM]: number;
+    [Difficulty.HARD]: number;
+    [Difficulty.EXPERT]: number;
+  };
+  [GameType.MATCHSTICK]: {
+    [Difficulty.BEGINNER]: number;
+    [Difficulty.EASY]: number;
+    [Difficulty.MEDIUM]: number;
+    [Difficulty.HARD]: number;
+    [Difficulty.EXPERT]: number;
+  };
+  [GameType.SPOT_DIFFERENCE]: {
+    [Difficulty.BEGINNER]: number;
+    [Difficulty.EASY]: number;
+    [Difficulty.MEDIUM]: number;
+    [Difficulty.HARD]: number;
+    [Difficulty.EXPERT]: number;
+  };
+  [GameType.JIGSAW]: {
+    [Difficulty.BEGINNER]: number;
+    [Difficulty.EASY]: number;
+    [Difficulty.MEDIUM]: number;
+    [Difficulty.HARD]: number;
+    [Difficulty.EXPERT]: number;
+  };
+  [GameType.TRIVIA]: {
+    [Difficulty.BEGINNER]: number;
+    [Difficulty.EASY]: number;
+    [Difficulty.MEDIUM]: number;
+    [Difficulty.HARD]: number;
+    [Difficulty.EXPERT]: number;
+  };
+  [GameType.RIDDLES]: {
     [Difficulty.BEGINNER]: number;
     [Difficulty.EASY]: number;
     [Difficulty.MEDIUM]: number;

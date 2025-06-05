@@ -164,11 +164,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         },
         {
           key: "smartHint",
-          label: "Smart Hint",
+          label: "Hint",
           icon: "lightbulb",
           type: "toggle",
           description:
-            "Smart hint can help you solve Sudoku problems, effective in Easy and Medium Sudoku",
+            "Select a empty cell and click the hint button to get a hint",
         },
       ],
     },
