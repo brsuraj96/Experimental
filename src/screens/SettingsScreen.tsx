@@ -117,21 +117,21 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           description:
             "When a number is placed correctly, remove all notes of the number in the peer cells",
         },
-        {
-          key: "autoComplete",
-          label: "Auto Complete",
-          icon: "magic",
-          type: "toggle",
-          description:
-            "Automatically complete the game when only a few cells are not filled",
-        },
-        {
-          key: "completionRate",
-          label: "Puzzle Completion Rate",
-          icon: "percentage",
-          type: "toggle",
-          description: "Show puzzle completion rate at the start",
-        },
+        // {
+        //   key: "autoComplete",
+        //   label: "Auto Complete",
+        //   icon: "magic",
+        //   type: "toggle",
+        //   description:
+        //     "Automatically complete the game when only a few cells are not filled",
+        // },
+        // {
+        //   key: "completionRate",
+        //   label: "Puzzle Completion Rate",
+        //   icon: "percentage",
+        //   type: "toggle",
+        //   description: "Show puzzle completion rate at the start",
+        // },
         { key: "showScore", label: "Show Score", icon: "star", type: "toggle" },
         {
           key: "tournament",

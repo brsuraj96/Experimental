@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, Alert, Vibration } from "react-native";
-import { Difficulty, SudokuBoard } from "../../../types";
+import { Difficulty, GameType, SudokuBoard } from "../../../types";
 import SudokuBoardComponent from "./SudokuBoard";
 import SudokuControls from "./SudokuControls";
 import {
@@ -13,6 +13,7 @@ import { useTheme } from "../../../context/ThemeContext";
 import useSound from "../../../hooks/useSound";
 import GameHeader from "./GameHeader";
 import { Settings } from "../../../context/SettingsContext";
+import { ScoreManager } from "../../../utils/scoring";
 
 interface SudokuGameProps {
   difficulty: Difficulty;
@@ -56,7 +57,11 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   );
   const [mistakes, setMistakes] = useState(0);
   const [time, setTime] = useState(0);
+  const [score, setScore] = useState<number>(0);
+  const [previousScore, setPreviousScore] = useState<number>(0);
+  const [correctStreak, setCorrectStreak] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const scoreManager = useRef(new ScoreManager(GameType.SUDOKU, difficulty));
 
   // Use settings to control timer
   useEffect(() => {
@@ -166,20 +171,35 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     setHistory([{ board: newBoard, selected: null }]);
     setMistakes(0);
     setTime(0);
-  }, [difficulty]);
-
-  // Check if game is completed
+    scoreManager.current = new ScoreManager(GameType.SUDOKU, difficulty);
+  }, [difficulty]);  // Check if game is completed and apply completion bonuses
   useEffect(() => {
     if (isGameComplete(board) && !isGameCompleted) {
+      // Apply completion bonuses (perfect game, no hints, speed bonus)
+      scoreManager.current.applyCompletionBonuses();
+      setScore(scoreManager.current.getScore());
       onComplete();
     }
-  }, [board, onComplete, isGameCompleted]);
+  }, [board, onComplete, isGameCompleted, mistakes]);
 
   // Update the remaining numbers whenever the board changes
   useEffect(() => {
     const remaining = calculateRemainingNumbers(board);
     setRemainingNumbers(remaining);
   }, [board]);
+  // Update score when the board changes
+  useEffect(() => {
+    if (settings.showScore) {
+      const newScore = scoreManager.current.getScore();
+      setPreviousScore(score);
+      setScore(newScore);
+    }
+  }, [board, settings.showScore]);
+
+  // Update difficulty in score manager
+  useEffect(() => {
+    scoreManager.current.setDifficulty(difficulty);
+  }, [difficulty]);
 
   const removeRelatedNotes = (
     currentBoard: SudokuBoard,
@@ -254,9 +274,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
         ...cell,
         value: number,
         notes: Array(9).fill(false),
-      };
-
-      // Check if the move is valid
+      }; // Check if the move is valid
       const isValid = validateSudoku(newBoard, row, col);
       newBoard[row][col].isError = !isValid;
 
@@ -268,6 +286,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
         if (settings.vibration) {
           Vibration.vibrate([0, 100, 50, 100]); // Longer vibration for errors
         }
+        scoreManager.current.addMistake();
+        updateStreak(false);
       } else {
         if (settings.audioEffect) {
           playSound("move");
@@ -275,6 +295,9 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
         if (settings.vibration) {
           Vibration.vibrate(50);
         }
+
+        // Update streak and score
+        updateStreak(true);
 
         // Auto-remove notes if enabled
         if (settings.autoRemoveNotes) {
@@ -498,9 +521,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   };
 
   const handleHintPress = () => {
-    if (isGameComplete(board) || isPaused) return;
-
-    // If a cell is selected, get its solution
+    if (isGameComplete(board) || isPaused) return; // If a cell is selected, get its solution
     let hint;
     if (selectedCell) {
       const [row, col] = selectedCell;
@@ -546,15 +567,34 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
 
     setHistory([...history, { board: newBoard, selected: selectedCell }]);
 
+    // Update score for using a hint and reset streak
+    scoreManager.current.addHintUsed();
+    setCorrectStreak(0); // Reset streak when using a hint
+
     if (settings.audioEffect) {
       playSound("hint");
     }
 
     if (settings.vibration) {
       Vibration.vibrate([0, 100, 50, 100]);
-    }
+    }    onMove();
+  };
 
-    onMove();
+  // Handle streak tracking and bonus
+  const updateStreak = (isValid: boolean) => {
+    if (isValid) {
+      const newStreak = correctStreak + 1;
+      setCorrectStreak(newStreak);
+
+      // Award streak bonus every 3 correct moves
+      if (newStreak % 3 === 0) {
+        scoreManager.current.addCorrectMove({ isStreak: true });
+      } else {
+        scoreManager.current.addCorrectMove();
+      }
+    } else {
+      setCorrectStreak(0); // Reset streak on mistake
+    }
   };
 
   const isLandscape = orientation === "landscape";
@@ -593,7 +633,6 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
       maxWidth: 300,
     },
   });
-
   return (
     <View style={[styles.container, isLandscape && styles.landscapeContainer]}>
       <GameHeader
@@ -604,6 +643,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
         isGameCompleted={isGameCompleted}
         showDifficultySelector
         onDifficultyChange={onDifficultyChange}
+        score={score}
+        previousScore={previousScore}
         settings={settings}
       />
       <View style={isLandscape ? styles.landscapeBoard : styles.board}>
