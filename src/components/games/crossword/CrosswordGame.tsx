@@ -30,12 +30,16 @@ import {
 } from "./logic";
 import { theme } from "../../../styles/theme";
 import useSound from "../../../hooks/useSound";
+import Timer from "../../common/Timer";
+import { Settings } from "../../../context/SettingsContext";
 
 interface CrosswordGameProps {
   difficulty: Difficulty;
   onMove: () => void;
   onComplete: () => void;
   orientation: "portrait" | "landscape";
+  settings: Settings;
+  isPaused?: boolean;
 }
 
 const CrosswordGame: React.FC<CrosswordGameProps> = ({
@@ -43,6 +47,8 @@ const CrosswordGame: React.FC<CrosswordGameProps> = ({
   onMove,
   onComplete,
   orientation,
+  settings,
+  isPaused = false,
 }) => {
   const [level, setLevel] = useState(() => generateLevel(difficulty));
   const [board, setBoard] = useState(level.board);
@@ -57,6 +63,7 @@ const CrosswordGame: React.FC<CrosswordGameProps> = ({
   const [inputValue, setInputValue] = useState<string>("");
   const [isGameComplete, setIsGameComplete] = useState(false);
   const [completionPulse] = useState(new Animated.Value(0));
+  const [startTime] = useState(Date.now());
 
   const { playSound } = useSound();
 
@@ -269,6 +276,13 @@ const CrosswordGame: React.FC<CrosswordGameProps> = ({
 
         <View style={styles.gameInfo}>
           <Text style={styles.difficultyText}>{difficulty}</Text>
+          {settings.timer && (
+            <Timer
+              startTime={startTime}
+              isRunning={!isGameComplete && !isPaused}
+              gameId={`crossword_${difficulty.toLowerCase()}`}
+            />
+          )}
           {activeClue && (
             <Text style={styles.activeClueText}>
               {activeClue.number}. {activeClue.text}

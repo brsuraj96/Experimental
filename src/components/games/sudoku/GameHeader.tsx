@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
-import { Difficulty } from "../../../types";
+import { GameType, Difficulty } from "../../../types";
 import Timer from "../../common/Timer";
 import CustomDropdown from "../../common/CustomDropdown";
 import { useTheme } from "../../../context/ThemeContext";
@@ -16,6 +16,8 @@ interface GameHeaderProps {
   showDifficultySelector?: boolean;
   onDifficultyChange?: (difficulty: Difficulty) => void;
   settings: Settings;
+  gameType: GameType;
+  isPaused?: boolean;
 }
 
 const GameHeader: React.FC<GameHeaderProps> = ({
@@ -27,8 +29,14 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   showDifficultySelector = false,
   onDifficultyChange,
   settings,
+  gameType,
+  isPaused = false,
 }) => {
   const { currentTheme } = useTheme();
+
+  const getGameId = () => {
+    return `${gameType.toLowerCase()}_${difficulty.toLowerCase()}`;
+  };
 
   const difficulties: Difficulty[] = [
     Difficulty.BEGINNER,
@@ -98,7 +106,12 @@ const GameHeader: React.FC<GameHeaderProps> = ({
             },
           ]}
         >
-          <Timer startTime={startTime} isRunning={!isGameCompleted} />
+          <Timer
+            startTime={startTime}
+            isRunning={!isGameCompleted && !isPaused}
+            gameId={getGameId()}
+            externalTime={time}
+          />
         </View>
       )}
     </View>

@@ -89,6 +89,9 @@ export type WordSearchBoard = WordSearchCell[][];
 export interface WordSearchWord {
   word: string;
   isFound: boolean;
+  row: number;
+  col: number;
+  direction: string;
   startCell?: { row: number; col: number };
   endCell?: { row: number; col: number };
 }
@@ -229,6 +232,13 @@ export interface GameProgress {
     [Difficulty.EXPERT]: number;
   };
   [GameType.CROSSWORD]: {
+    [Difficulty.BEGINNER]: number;
+    [Difficulty.EASY]: number;
+    [Difficulty.MEDIUM]: number;
+    [Difficulty.HARD]: number;
+    [Difficulty.EXPERT]: number;
+  };
+  [GameType.SPOT_DIFFERENCE]: {
     [Difficulty.BEGINNER]: number;
     [Difficulty.EASY]: number;
     [Difficulty.MEDIUM]: number;

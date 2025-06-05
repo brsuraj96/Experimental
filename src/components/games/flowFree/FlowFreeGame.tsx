@@ -10,12 +10,16 @@ import {
 } from "./logic";
 import { theme } from "../../../styles/theme";
 import useSound from "../../../hooks/useSound";
+import { Settings } from "../../../context/SettingsContext";
+import Timer from "../../common/Timer";
 
 interface FlowFreeGameProps {
   difficulty: Difficulty;
   onMove: () => void;
   onComplete: () => void;
   orientation: "portrait" | "landscape";
+  settings: Settings;
+  isPaused?: boolean;
 }
 
 const FlowFreeGame: React.FC<FlowFreeGameProps> = ({
@@ -23,6 +27,8 @@ const FlowFreeGame: React.FC<FlowFreeGameProps> = ({
   onMove,
   onComplete,
   orientation,
+  settings,
+  isPaused = false,
 }) => {
   const { playSound } = useSound();
   const [level, setLevel] = useState<FlowLevel>(() =>
@@ -35,6 +41,8 @@ const FlowFreeGame: React.FC<FlowFreeGameProps> = ({
   );
   const [movesCount, setMovesCount] = useState(0);
   const [levelNumber, setLevelNumber] = useState(1);
+  const [startTime] = useState(Date.now());
+  const [isGameComplete, setIsGameComplete] = useState(false);
 
   // Reference to track touch movement
   const touchRef = useRef<{
@@ -243,6 +251,16 @@ const FlowFreeGame: React.FC<FlowFreeGameProps> = ({
               {level.size}×{level.size}
             </Text>
           </View>
+
+          {settings.timer && (
+            <View style={styles.infoItem}>
+              <Timer
+                startTime={startTime}
+                isRunning={!isGameComplete && !isPaused}
+                gameId={`flow_free_${difficulty.toLowerCase()}`}
+              />
+            </View>
+          )}
 
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Flows</Text>

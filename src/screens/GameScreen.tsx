@@ -38,7 +38,7 @@ const GameScreen = () => {
   const { playSound } = useSound();
   const { settings } = useSettings();
 
-  const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
+  const [gameStartTime, setGameStartTime] = useState<number>(0);
   const [moves, setMoves] = useState<number>(0);
   const [isGameCompleted, setIsGameCompleted] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState(false);

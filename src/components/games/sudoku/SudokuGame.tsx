@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Alert, Vibration } from "react-native";
-import { Difficulty, SudokuBoard } from "../../../types";
+import { View, StyleSheet, Alert, Vibration, Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Difficulty, SudokuBoard, GameType } from "../../../types";
 import SudokuBoardComponent from "./SudokuBoard";
 import SudokuControls from "./SudokuControls";
 import {
@@ -13,6 +14,25 @@ import { useTheme } from "../../../context/ThemeContext";
 import useSound from "../../../hooks/useSound";
 import GameHeader from "./GameHeader";
 import { Settings } from "../../../context/SettingsContext";
+
+// Helper function to safely access web storage
+const getWebStorage = () => {
+  if (Platform.OS === "web") {
+    try {
+      const storage =
+        typeof globalThis !== "undefined" ? globalThis.localStorage : null;
+      if (storage) {
+        const testKey = "__storage_test__";
+        storage.setItem(testKey, testKey);
+        storage.removeItem(testKey);
+        return storage;
+      }
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+};
 
 interface SudokuGameProps {
   difficulty: Difficulty;
@@ -57,19 +77,108 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   const [mistakes, setMistakes] = useState(0);
   const [time, setTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTimeRef = useRef<number>(time);
+  const pauseTimeRef = useRef<number | null>(null);
 
-  // Use settings to control timer
+  // Save game state effect
   useEffect(() => {
+    const saveGameState = async () => {
+      const gameState = {
+        board,
+        time,
+        mistakes,
+        difficulty,
+        history,
+      };
+      try {
+        const webStorage = getWebStorage();
+        if (webStorage) {
+          webStorage.setItem(`sudoku_game_state`, JSON.stringify(gameState));
+        } else {
+          await AsyncStorage.setItem(
+            `sudoku_game_state`,
+            JSON.stringify(gameState)
+          );
+        }
+      } catch (error) {
+        console.error("Error saving game state:", error);
+      }
+    };
+
+    // Save state when paused or unmounting
+    if (isPaused) {
+      saveGameState();
+      pauseTimeRef.current = Date.now();
+      // Save pause timestamp
+      const webStorage = getWebStorage();
+      if (webStorage) {
+        webStorage.setItem(
+          `sudoku_pause_time_${difficulty}`,
+          pauseTimeRef.current.toString()
+        );
+      } else {
+        AsyncStorage.setItem(
+          `sudoku_pause_time_${difficulty}`,
+          pauseTimeRef.current.toString()
+        ).catch((error) => console.error("Error saving pause time:", error));
+      }
+    }
+
+    return () => {
+      saveGameState();
+    };
+  }, [isPaused, board, time, mistakes, difficulty, history]);
+
+  // Timer control effect
+  useEffect(() => {
+    // Clean up any existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    // Don't start timer if disabled, paused, or completed
     if (!settings.timer || isPaused || isGameCompleted) {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
+      if (isPaused) {
+        const timeSnapshot = time;
+        const pauseTimestamp = Date.now();
+        pauseTimeRef.current = pauseTimestamp;
+
+        // Save game state and pause time
+        const webStorage = getWebStorage();
+        if (webStorage) {
+          webStorage.setItem(
+            `sudoku_time_${difficulty}`,
+            timeSnapshot.toString()
+          );
+          webStorage.setItem(
+            `sudoku_pause_${difficulty}`,
+            pauseTimestamp.toString()
+          );
+        } else {
+          AsyncStorage.multiSet([
+            [`sudoku_time_${difficulty}`, timeSnapshot.toString()],
+            [`sudoku_pause_${difficulty}`, pauseTimestamp.toString()],
+          ]).catch((error) =>
+            console.error("Error saving pause state:", error)
+          );
+        }
       }
       return;
     }
 
+    // When resuming, calculate and account for pause duration
+    const now = Date.now();
+    const pauseDuration = pauseTimeRef.current ? now - pauseTimeRef.current : 0;
+    const startRef = now - time * 1000 - pauseDuration;
+
+    // Reset refs and start new timer
+    lastTimeRef.current = time;
+    pauseTimeRef.current = null;
+
     timerRef.current = setInterval(() => {
-      setTime((prev) => prev + 1);
+      const currentTime = Math.floor((Date.now() - startRef) / 1000);
+      setTime(currentTime);
     }, 1000);
 
     return () => {
@@ -78,7 +187,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
         timerRef.current = null;
       }
     };
-  }, [settings.timer, isPaused, isGameCompleted]);
+  }, [settings.timer, isPaused, isGameCompleted, time, difficulty]);
 
   // Use settings to control mistake limit
   useEffect(() => {
@@ -260,7 +369,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
       const isValid = validateSudoku(newBoard, row, col);
       newBoard[row][col].isError = !isValid;
 
-      if (!isValid) {
+      const isValidMove = isValid;
+      if (!isValidMove) {
         setMistakes((prev) => prev + 1);
         if (settings.audioEffect) {
           playSound("error");
@@ -276,7 +386,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
           Vibration.vibrate(50);
         }
 
-        // Auto-remove notes if enabled
+        // Auto-remove notes if enabled and the move is valid
         if (settings.autoRemoveNotes) {
           removeRelatedNotes(newBoard, row, col, number);
         }
@@ -531,6 +641,109 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     onMove();
   };
 
+  // Persist game state when component unmounts or game is paused
+  useEffect(() => {
+    const saveGameState = async () => {
+      const gameState = {
+        board,
+        time,
+        mistakes,
+        difficulty,
+        history,
+      };
+      try {
+        const webStorage = getWebStorage();
+        if (webStorage) {
+          webStorage.setItem(`sudoku_game_state`, JSON.stringify(gameState));
+        } else {
+          await AsyncStorage.setItem(
+            `sudoku_game_state`,
+            JSON.stringify(gameState)
+          );
+        }
+      } catch (error) {
+        console.error("Error saving game state:", error);
+      }
+    };
+
+    // Save state when paused or unmounting
+    if (isPaused) {
+      saveGameState();
+      pauseTimeRef.current = Date.now();
+      // Save pause timestamp
+      const webStorage = getWebStorage();
+      if (webStorage) {
+        webStorage.setItem(
+          `sudoku_pause_time_${difficulty}`,
+          pauseTimeRef.current.toString()
+        );
+      } else {
+        AsyncStorage.setItem(
+          `sudoku_pause_time_${difficulty}`,
+          pauseTimeRef.current.toString()
+        ).catch((error) => console.error("Error saving pause time:", error));
+      }
+    }
+
+    return () => {
+      saveGameState();
+    };
+  }, [isPaused, board, time, mistakes, difficulty, history]);
+
+  // Load saved game state on mount
+  useEffect(() => {
+    const loadGameState = async () => {
+      try {
+        let savedState = null;
+        let savedPauseTime = null;
+
+        if (Platform.OS === "web") {
+          savedState = localStorage.getItem(`sudoku_game_state`);
+          savedPauseTime = localStorage.getItem(
+            `sudoku_pause_time_${difficulty}`
+          );
+        } else {
+          savedState = await AsyncStorage.getItem(`sudoku_game_state`);
+          savedPauseTime = await AsyncStorage.getItem(
+            `sudoku_pause_time_${difficulty}`
+          );
+        }
+
+        if (savedState) {
+          const gameState = JSON.parse(savedState);
+          // Only restore if the difficulty matches
+          if (gameState.difficulty === difficulty) {
+            setBoard(gameState.board);
+            setMistakes(gameState.mistakes);
+            setHistory(gameState.history);
+
+            // If we have a pause time, use it to properly resume the timer
+            if (savedPauseTime) {
+              const pauseTime = parseInt(savedPauseTime);
+              pauseTimeRef.current = pauseTime;
+
+              // If we're not paused, we need to adjust the time to account for the time since the game was paused
+              if (!isPaused) {
+                const now = Date.now();
+                const elapsedSincePause = Math.floor((now - pauseTime) / 1000);
+                setTime(gameState.time + elapsedSincePause);
+              } else {
+                // If still paused, just use the saved time
+                setTime(gameState.time);
+              }
+            } else {
+              setTime(gameState.time);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading saved game state:", error);
+      }
+    };
+
+    loadGameState();
+  }, [difficulty]);
+
   const isLandscape = orientation === "landscape";
 
   const styles = StyleSheet.create({
@@ -579,6 +792,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
         showDifficultySelector
         onDifficultyChange={onDifficultyChange}
         settings={settings}
+        gameType={GameType.SUDOKU}
+        isPaused={isPaused}
       />
       <View style={isLandscape ? styles.landscapeBoard : styles.board}>
         <SudokuBoardComponent
