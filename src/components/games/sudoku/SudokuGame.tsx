@@ -309,8 +309,14 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
       // Place the locked number
       placeNumber(lockedNumber, row, col);
     } else {
-      // Allow cell selection in both modes when no number is locked
-      setSelectedCell([row, col]);
+      // Handle cell selection/deselection
+      if (selectedCell && selectedCell[0] === row && selectedCell[1] === col) {
+        // If clicking the same cell, deselect it
+        setSelectedCell(null);
+      } else {
+        // If clicking a different cell or no cell was selected, select it
+        setSelectedCell([row, col]);
+      }
     }
   };
 
@@ -494,7 +500,28 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   const handleHintPress = () => {
     if (isGameComplete(board) || isPaused) return;
 
-    const hint = getHint(board);
+    // If a cell is selected, get its solution
+    let hint;
+    if (selectedCell) {
+      const [row, col] = selectedCell;
+      const cell = board[row][col];
+
+      // Don't provide hints for fixed cells or correctly filled cells
+      if (cell.isFixed || (cell.value !== null && !cell.isError)) {
+        Alert.alert(
+          "Hint not needed",
+          "This cell is already correctly filled."
+        );
+        return;
+      }
+
+      // Get the solution for this cell
+      hint = getHint(board, row, col);
+    } else {
+      // Original hint behavior for when no cell is selected
+      hint = getHint(board);
+    }
+
     if (!hint) {
       Alert.alert("No hints available", "No valid hints found at this time.");
       return;
@@ -517,8 +544,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
       setSelectedNumber(null);
     }
 
-    setSelectedCell([row, col]);
-    setHistory([...history, { board: newBoard, selected: [row, col] }]);
+    setHistory([...history, { board: newBoard, selected: selectedCell }]);
 
     if (settings.audioEffect) {
       playSound("hint");

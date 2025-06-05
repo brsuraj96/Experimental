@@ -270,9 +270,15 @@ export const isGameComplete = (board: SudokuBoard): boolean => {
 
 /**
  * Get a hint for the current board state
+ * @param board The current Sudoku board
+ * @param rowHint Optional row to get hint for specific cell
+ * @param colHint Optional col to get hint for specific cell
+ * @returns An object with row, col, and value for the hint
  */
 export const getHint = (
-  board: SudokuBoard
+  board: SudokuBoard,
+  rowHint?: number,
+  colHint?: number
 ): { row: number; col: number; value: number } | null => {
   // Create a numeric version of the board
   const numericBoard = board.map((r) => r.map((cell) => cell.value));
@@ -280,7 +286,19 @@ export const getHint = (
   // Try to solve the board
   const solvedBoard = [...numericBoard.map((r) => [...r])];
   if (solveSudoku(solvedBoard as (number | null)[][])) {
-    // Find a cell that's empty in the current board but has a value in the solved board
+    // If specific cell requested
+    if (rowHint !== undefined && colHint !== undefined) {
+      if (numericBoard[rowHint][colHint] === null) {
+        return {
+          row: rowHint,
+          col: colHint,
+          value: solvedBoard[rowHint][colHint] as number,
+        };
+      }
+      return null;
+    }
+
+    // Find any empty cell
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
         if (numericBoard[row][col] === null && solvedBoard[row][col] !== null) {
