@@ -3,6 +3,7 @@ import { View, StyleSheet, Alert, Vibration } from "react-native";
 import { Difficulty, GameType, SudokuBoard } from "../../../types";
 import SudokuBoardComponent from "./SudokuBoard";
 import SudokuControls from "./SudokuControls";
+import { usePauseTimer } from "../../common/TimerLogic";
 import {
   generateSudoku,
   validateSudoku,
@@ -20,7 +21,6 @@ interface SudokuGameProps {
   onMove: () => void;
   onComplete: () => void;
   orientation: "portrait" | "landscape";
-  startTime: number;
   isGameCompleted: boolean;
   onDifficultyChange: (difficulty: Difficulty) => void;
   settings: Settings;
@@ -32,7 +32,6 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   onMove,
   onComplete,
   orientation,
-  startTime,
   isGameCompleted,
   onDifficultyChange,
   settings,
@@ -56,34 +55,48 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     Array(9).fill(9)
   );
   const [mistakes, setMistakes] = useState(0);
-  const [time, setTime] = useState(0);
   const [score, setScore] = useState<number>(0);
   const [previousScore, setPreviousScore] = useState<number>(0);
   const [correctStreak, setCorrectStreak] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const {
+    timer: time,
+    start: startTimer,
+    pause: pauseTimer,
+    resume: resumeTimer,
+    reset: resetTimer,
+  } = usePauseTimer({
+    initialTime: 0,
+    autoStart: settings.timer,
+  });
   const scoreManager = useRef(new ScoreManager(GameType.SUDOKU, difficulty));
+  const [isPausing, setIsPausing] = useState(false);
 
-  // Use settings to control timer
+  // Handle timer pause/resume based on game state
   useEffect(() => {
-    if (!settings.timer || isPaused || isGameCompleted) {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+    if (!settings.timer || isGameCompleted) {
+      pauseTimer();
       return;
     }
 
-    timerRef.current = setInterval(() => {
-      setTime((prev) => prev + 1);
-    }, 1000);
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [settings.timer, isPaused, isGameCompleted]);
+    if (isPaused) {
+      setIsPausing(true);
+      pauseTimer();
+    } else if (isPausing) {
+      setIsPausing(false);
+      resumeTimer();
+    } else if (!time) {
+      startTimer();
+    }
+  }, [
+    settings.timer,
+    isPaused,
+    isGameCompleted,
+    pauseTimer,
+    resumeTimer,
+    startTimer,
+    time,
+    isPausing,
+  ]);
 
   // Use settings to control mistake limit
   useEffect(() => {
@@ -160,7 +173,6 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
 
     return validNumbers;
   };
-
   // Initialize the game when difficulty changes
   useEffect(() => {
     const newBoard = generateSudoku(difficulty);
@@ -170,9 +182,24 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     setLockedNumber(null);
     setHistory([{ board: newBoard, selected: null }]);
     setMistakes(0);
-    setTime(0);
+    resetTimer(0);
+    setIsPausing(false);
     scoreManager.current = new ScoreManager(GameType.SUDOKU, difficulty);
-  }, [difficulty]);  // Check if game is completed and apply completion bonuses
+  }, [difficulty]);
+
+  // Resume game state when unpausing
+  useEffect(() => {
+    if (!isPaused && isPausing) {
+      // Restore last selected cell and number when resuming
+      const lastState = history[history.length - 1];
+      if (lastState?.selected) {
+        setSelectedCell(lastState.selected);
+      }
+      // Keep lockedNumber state intact when resuming
+    }
+  }, [isPaused, isPausing, history]);
+
+  // Check if game is completed and apply completion bonuses
   useEffect(() => {
     if (isGameComplete(board) && !isGameCompleted) {
       // Apply completion bonuses (perfect game, no hints, speed bonus)
@@ -577,7 +604,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
 
     if (settings.vibration) {
       Vibration.vibrate([0, 100, 50, 100]);
-    }    onMove();
+    }
+    onMove();
   };
 
   // Handle streak tracking and bonus
@@ -639,13 +667,13 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
         mistakes={mistakes}
         difficulty={difficulty}
         time={time}
-        startTime={startTime}
         isGameCompleted={isGameCompleted}
         showDifficultySelector
         onDifficultyChange={onDifficultyChange}
         score={score}
         previousScore={previousScore}
         settings={settings}
+        isPaused={isPaused}
       />
       <View style={isLandscape ? styles.landscapeBoard : styles.board}>
         <SudokuBoardComponent

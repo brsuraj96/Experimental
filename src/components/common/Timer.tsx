@@ -1,46 +1,34 @@
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import { Text, StyleSheet, View } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
+import { usePauseTimer } from "./TimerLogic";
 
 interface TimerProps {
-  startTime: number;
+  initialTime?: number;
   isRunning: boolean;
+  isPaused?: boolean;
 }
 
-const Timer: React.FC<TimerProps> = ({ startTime, isRunning }) => {
+const Timer: React.FC<TimerProps> = ({
+  initialTime = 0,
+  isRunning,
+  isPaused = false,
+}) => {
   const { currentTheme } = useTheme();
+  const { timer, formatTime, pause, resume } = usePauseTimer({
+    initialTime,
+    autoStart: isRunning,
+  });
 
-  const [elapsedTime, setElapsedTime] = useState<number>(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (isRunning) {
-      // Calculate initial elapsed time
-      const initialElapsed = Math.floor((Date.now() - startTime) / 1000);
-      setElapsedTime(initialElapsed);
-
-      // Start the timer
-      intervalRef.current = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
-      }, 1000);
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+  // Handle pause/resume when isPaused changes
+  React.useEffect(() => {
+    if (isPaused) {
+      pause();
+    } else {
+      resume();
     }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [startTime, isRunning]);
-
-  const formatTime = (totalSeconds: number): string => {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
-  };
-
+  }, [isPaused, pause, resume]);
   const styles = StyleSheet.create({
     container: {
       flexDirection: "row",
@@ -49,9 +37,7 @@ const Timer: React.FC<TimerProps> = ({ startTime, isRunning }) => {
       paddingVertical: 6,
       paddingHorizontal: 12,
       borderRadius: 16,
-    },
-    clockIcon: {
-      fontSize: 16,
+      opacity: 1,
     },
     time: {
       marginLeft: 6,
@@ -64,11 +50,11 @@ const Timer: React.FC<TimerProps> = ({ startTime, isRunning }) => {
   return (
     <View style={styles.container}>
       <FontAwesome5
-        name="stopwatch"
+        name={isPaused ? "pause" : "stopwatch"}
         size={16}
         color={currentTheme.colors.text}
       />
-      <Text style={styles.time}>{formatTime(elapsedTime)}</Text>
+      <Text style={styles.time}>{formatTime()}</Text>
     </View>
   );
 };

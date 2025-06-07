@@ -21,7 +21,7 @@ const lightColors = {
   destinationCircle: "#FACC15",
   water: "#67E8F9",
   transparent: "transparent",
-  overlay: "rgba(0, 0, 0, 0.8)",
+  overlay: "rgba(0, 0, 0, 0.6)",
   shadow: "rgba(0, 0, 0, 0.1)",
   white: "#FFFFFF",
   red: "#F87171",

@@ -7,6 +7,8 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Vibration,
+  AppState,
+  AppStateStatus,
 } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -48,13 +50,18 @@ const GameScreen = () => {
 
   useEffect(() => {
     const backAction = () => {
+      // Pause the game first
+      handlePause();
       Alert.alert(
         "Exit Game",
         "Are you sure you want to exit? Your progress will be lost.",
         [
           {
             text: "Cancel",
-            onPress: () => null,
+            onPress: () => {
+              handleResume(); // Resume if staying in game
+              return null;
+            },
             style: "cancel",
           },
           { text: "Exit", onPress: () => navigation.goBack() },
@@ -105,6 +112,22 @@ const GameScreen = () => {
     settings.audioEffect,
     settings.vibration,
   ]);
+
+  // Add AppState monitoring
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextAppState: AppStateStatus) => {
+        if (nextAppState === "inactive" || nextAppState === "background") {
+          handlePause();
+        }
+      }
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   const handleAddMove = () => {
     setMoves((prev) => prev + 1);
@@ -159,11 +182,10 @@ const GameScreen = () => {
         return (
           <SudokuGame
             {...gameProps}
-            startTime={gameStartTime}
             isGameCompleted={isGameCompleted}
             onDifficultyChange={(newDifficulty: Difficulty) => {
               setDifficulty(newDifficulty);
-              setGameStartTime(Date.now());
+              setGameStartTime(Date.now()); // Keep tracking start time for completion screen
               setIsGameCompleted(false);
             }}
           />
@@ -199,6 +221,8 @@ const GameScreen = () => {
         subtitle={difficulty}
         showBackButton
         onBack={() => {
+          // Pause the game first
+          handlePause();
           if (settings.audioEffect) {
             playSound("click");
           }
@@ -212,6 +236,12 @@ const GameScreen = () => {
               {
                 text: "Cancel",
                 style: "cancel",
+                onPress: () => {
+                  if (settings.audioEffect) {
+                    playSound("click");
+                  }
+                  handleResume(); // Resume if staying in game
+                },
               },
               {
                 text: "Exit",
@@ -270,7 +300,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.medium,
   },
   blurContainer: {
-    opacity: 0.3,
+    opacity: 0.7,
   },
 });
 

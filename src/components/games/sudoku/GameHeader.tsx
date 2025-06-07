@@ -14,26 +14,26 @@ interface GameHeaderProps {
   mistakes: number;
   difficulty: Difficulty;
   time: number;
-  startTime: number;
   isGameCompleted: boolean;
   showDifficultySelector?: boolean;
   onDifficultyChange?: (difficulty: Difficulty) => void;
-  score?: number;
+  score: number;
+  previousScore: number;
   settings: Settings;
-  previousScore?: number;
+  isPaused?: boolean;
 }
 
 const GameHeader: React.FC<GameHeaderProps> = ({
   mistakes,
   difficulty,
   time,
-  startTime,
   isGameCompleted,
-  showDifficultySelector = false,
+  showDifficultySelector,
   onDifficultyChange,
-  settings,
-  score = 0,
+  score,
   previousScore,
+  settings,
+  isPaused = false,
 }) => {
   const { currentTheme } = useTheme();
   const { playSound } = useSound();
@@ -202,7 +202,11 @@ const GameHeader: React.FC<GameHeaderProps> = ({
               },
             ]}
           >
-            <Timer startTime={startTime} isRunning={!isGameCompleted} />
+            <Timer
+              initialTime={time}
+              isRunning={!isGameCompleted}
+              isPaused={isPaused}
+            />
           </View>
         )}
       </View>

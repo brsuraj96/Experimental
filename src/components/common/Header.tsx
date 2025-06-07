@@ -304,7 +304,6 @@ const Header: React.FC<HeaderProps> = ({
               />
             </TouchableOpacity>
           )}
-
           {onHint && (
             <TouchableOpacity
               style={styles.actionButton}
@@ -318,7 +317,6 @@ const Header: React.FC<HeaderProps> = ({
               />
             </TouchableOpacity>
           )}
-
           {onReset && (
             <TouchableOpacity
               style={styles.actionButton}
@@ -332,11 +330,17 @@ const Header: React.FC<HeaderProps> = ({
               />
             </TouchableOpacity>
           )}
-
           {onPause && (
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => setShowPauseDialog(true)}
+              onPress={() => {
+                if (isPaused) {
+                  onResume?.();
+                } else {
+                  setShowPauseDialog(true);
+                  onPause?.();
+                }
+              }}
               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
               <FontAwesome5
@@ -346,7 +350,6 @@ const Header: React.FC<HeaderProps> = ({
               />
             </TouchableOpacity>
           )}
-
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => setShowThemeSelector(!showThemeSelector)}
@@ -358,12 +361,14 @@ const Header: React.FC<HeaderProps> = ({
               color={currentTheme.colors.text}
             />
           </TouchableOpacity>
-
           {showDifficultySelector && renderDifficultySelector()}
           {showSettings && (
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => navigation.navigate("Settings")}
+              onPress={() => {
+                onPause?.(); // Pause the game before navigating
+                navigation.navigate("Settings");
+              }}
               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
               <FontAwesome5

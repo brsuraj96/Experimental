@@ -1,11 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
-import { GameType, Difficulty, WordSearchLevel } from '../../../types';
-import { theme } from '../../../styles/theme';
-import useSound from '../../../hooks/useSound';
-import WordSearchBoard from './WordSearchBoard';
-import WordList from './WordList';
-import { generateWordSearchLevel } from './wordSearchGenerator';
+import React, { useState, useEffect, useCallback } from "react";
+import { View, StyleSheet, Alert } from "react-native";
+import {
+  GameType,
+  Difficulty,
+  WordSearchLevel,
+  WordSearchWord,
+} from "../../../types";
+import { theme } from "../../../styles/theme";
+import useSound from "../../../hooks/useSound";
+import WordSearchBoard from "./WordSearchBoard";
+import WordList from "./WordList";
+import { generateWordSearchLevel } from "./wordSearchGenerator";
 
 interface WordSearchGameProps {
   difficulty: Difficulty;
@@ -20,8 +25,14 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({
 }) => {
   const [level, setLevel] = useState<WordSearchLevel | null>(null);
   const [moves, setMoves] = useState(0);
-  const [startPoint, setStartPoint] = useState<{ row: number; col: number } | null>(null);
-  const [currentPoint, setCurrentPoint] = useState<{ row: number; col: number } | null>(null);
+  const [startPoint, setStartPoint] = useState<{
+    row: number;
+    col: number;
+  } | null>(null);
+  const [currentPoint, setCurrentPoint] = useState<{
+    row: number;
+    col: number;
+  } | null>(null);
   const { playSound } = useSound();
 
   // Generate a new level when difficulty changes
@@ -33,172 +44,210 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({
 
   // Check for completion
   useEffect(() => {
-    if (level && level.words.every(word => word.isFound)) {
-      playSound('win');
+    if (level && level.words.every((word) => word.isFound)) {
+      playSound("win");
       onComplete(moves);
     }
   }, [level, moves, onComplete, playSound]);
 
-  const handleCellPress = useCallback((row: number, col: number) => {
-    if (!level) return;
+  const handleCellPress = useCallback(
+    (row: number, col: number) => {
+      if (!level) return;
 
-    // If no start point is set, set it
-    if (startPoint === null) {
-      setStartPoint({ row, col });
-      setCurrentPoint({ row, col });
-      
-      // Update board to highlight selected cell
-      const updatedBoard = level.board.map(boardRow => 
-        boardRow.map(cell => ({
-          ...cell,
-          isSelected: cell.row === row && cell.col === col,
-          isHighlighted: false
-        }))
-      );
-      
-      setLevel({ ...level, board: updatedBoard });
-    } 
-    // If a start point is already set, this is the end point
-    else {
-      // Determine direction from start to end
-      const direction = determineDirection(startPoint.row, startPoint.col, row, col);
-      
-      if (direction) {
-        // Check if selected word matches any in the word list
-        const selectedWord = getSelectedWord(level.board, startPoint.row, startPoint.col, direction);
-        const foundWordIndex = level.words.findIndex(
-          word => word.row === startPoint.row && 
-                 word.col === startPoint.col && 
-                 word.direction === direction &&
-                 !word.isFound
+      // If no start point is set, set it
+      if (startPoint === null) {
+        setStartPoint({ row, col });
+        setCurrentPoint({ row, col });
+
+        // Update board to highlight selected cell
+        const updatedBoard = level.board.map((boardRow) =>
+          boardRow.map((cell) => ({
+            ...cell,
+            isSelected: cell.row === row && cell.col === col,
+            isHighlighted: false,
+          }))
         );
-        
-        if (foundWordIndex >= 0) {
-          // Mark word as found
-          const updatedWords = [...level.words];
-          updatedWords[foundWordIndex] = {
-            ...updatedWords[foundWordIndex],
-            isFound: true
-          };
-          
-          // Update cells to show found word
-          const updatedBoard = markFoundWord(level.board, startPoint.row, startPoint.col, direction);
-          
-          setLevel({
-            ...level,
-            words: updatedWords,
-            board: updatedBoard
-          });
-          
-          setMoves(prev => prev + 1);
-          onMove();
-          playSound('move');
-        } else {
-          // Wrong selection
-          playSound('error');
-          
-          // Reset the board selection state
-          const updatedBoard = level.board.map(boardRow => 
-            boardRow.map(cell => ({
-              ...cell,
-              isSelected: false,
-              isHighlighted: false
-            }))
-          );
-          
-          setLevel({
-            ...level,
-            board: updatedBoard
-          });
-        }
-      }
-      
-      // Reset selection state
-      setStartPoint(null);
-      setCurrentPoint(null);
-    }
-  }, [level, startPoint, onMove, playSound]);
 
-  const handleCellDrag = useCallback((row: number, col: number) => {
-    if (!level || !startPoint) return;
-    
-    // Update current point
-    setCurrentPoint({ row, col });
-    
-    // Determine direction from start to current
-    const direction = determineDirection(startPoint.row, startPoint.col, row, col);
-    
-    if (direction) {
-      // Highlight cells in the direction
-      const updatedBoard = highlightCellsInDirection(
-        level.board, 
-        startPoint.row, 
-        startPoint.col, 
-        direction
+        setLevel({ ...level, board: updatedBoard });
+      }
+      // If a start point is already set, this is the end point
+      else {
+        // Determine direction from start to end
+        const direction = determineDirection(
+          startPoint.row,
+          startPoint.col,
+          row,
+          col
+        );
+
+        if (direction) {
+          // Check if selected word matches any in the word list
+          const selectedWord = getSelectedWord(
+            level.board,
+            startPoint.row,
+            startPoint.col,
+            direction
+          );
+          const foundWordIndex = level.words.findIndex(
+            (word) =>
+              word.row === startPoint.row &&
+              word.col === startPoint.col &&
+              word.direction === direction &&
+              !word.isFound
+          );
+
+          if (foundWordIndex >= 0) {
+            // Mark word as found
+            const updatedWords = [...level.words];
+            updatedWords[foundWordIndex] = {
+              ...updatedWords[foundWordIndex],
+              isFound: true,
+            };
+
+            // Update cells to show found word
+            const updatedBoard = markFoundWord(
+              level.board,
+              startPoint.row,
+              startPoint.col,
+              direction
+            );
+
+            setLevel({
+              ...level,
+              words: updatedWords,
+              board: updatedBoard,
+            });
+
+            setMoves((prev) => prev + 1);
+            onMove();
+            playSound("move");
+          } else {
+            // Wrong selection
+            playSound("error");
+
+            // Reset the board selection state
+            const updatedBoard = level.board.map((boardRow) =>
+              boardRow.map((cell) => ({
+                ...cell,
+                isSelected: false,
+                isHighlighted: false,
+              }))
+            );
+
+            setLevel({
+              ...level,
+              board: updatedBoard,
+            });
+          }
+        }
+
+        // Reset selection state
+        setStartPoint(null);
+        setCurrentPoint(null);
+      }
+    },
+    [level, startPoint, onMove, playSound]
+  );
+
+  const handleCellDrag = useCallback(
+    (row: number, col: number) => {
+      if (!level || !startPoint) return;
+
+      // Update current point
+      setCurrentPoint({ row, col });
+
+      // Determine direction from start to current
+      const direction = determineDirection(
+        startPoint.row,
+        startPoint.col,
+        row,
+        col
       );
-      
-      setLevel({
-        ...level,
-        board: updatedBoard
-      });
-    }
-  }, [level, startPoint]);
+
+      if (direction) {
+        // Highlight cells in the direction
+        const updatedBoard = highlightCellsInDirection(
+          level.board,
+          startPoint.row,
+          startPoint.col,
+          direction
+        );
+
+        setLevel({
+          ...level,
+          board: updatedBoard,
+        });
+      }
+    },
+    [level, startPoint]
+  );
 
   const handleCellRelease = useCallback(() => {
     if (!level || !startPoint || !currentPoint) return;
-    
+
     // Determine direction from start to end
-    const direction = determineDirection(startPoint.row, startPoint.col, currentPoint.row, currentPoint.col);
-    
+    const direction = determineDirection(
+      startPoint.row,
+      startPoint.col,
+      currentPoint.row,
+      currentPoint.col
+    );
+
     if (direction) {
       // Check if selected word matches any in the word list
       const foundWordIndex = level.words.findIndex(
-        word => word.row === startPoint.row && 
-               word.col === startPoint.col && 
-               word.direction === direction &&
-               !word.isFound
+        (word) =>
+          word.row === startPoint.row &&
+          word.col === startPoint.col &&
+          word.direction === direction &&
+          !word.isFound
       );
-      
+
       if (foundWordIndex >= 0) {
         // Mark word as found
         const updatedWords = [...level.words];
         updatedWords[foundWordIndex] = {
           ...updatedWords[foundWordIndex],
-          isFound: true
+          isFound: true,
         };
-        
+
         // Update cells to show found word
-        const updatedBoard = markFoundWord(level.board, startPoint.row, startPoint.col, direction);
-        
+        const updatedBoard = markFoundWord(
+          level.board,
+          startPoint.row,
+          startPoint.col,
+          direction
+        );
+
         setLevel({
           ...level,
           words: updatedWords,
-          board: updatedBoard
+          board: updatedBoard,
         });
-        
-        setMoves(prev => prev + 1);
+
+        setMoves((prev) => prev + 1);
         onMove();
-        playSound('move');
+        playSound("move");
       } else {
         // Wrong selection
-        playSound('error');
-        
+        playSound("error");
+
         // Reset the board selection state
-        const updatedBoard = level.board.map(boardRow => 
-          boardRow.map(cell => ({
+        const updatedBoard = level.board.map((boardRow) =>
+          boardRow.map((cell) => ({
             ...cell,
             isSelected: false,
-            isHighlighted: false
+            isHighlighted: false,
           }))
         );
-        
+
         setLevel({
           ...level,
-          board: updatedBoard
+          board: updatedBoard,
         });
       }
     }
-    
+
     // Reset selection state
     setStartPoint(null);
     setCurrentPoint(null);
@@ -223,148 +272,150 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({
 
 // Helper functions
 const determineDirection = (
-  startRow: number, 
-  startCol: number, 
-  endRow: number, 
+  startRow: number,
+  startCol: number,
+  endRow: number,
   endCol: number
-): string | null => {
+): WordSearchWord["direction"] | null => {
   // Determine the direction based on start and end points
   const rowDiff = endRow - startRow;
   const colDiff = endCol - startCol;
-  
+
   // Check if it's a straight line
-  if (rowDiff === 0 && colDiff > 0) return 'horizontal';
-  if (rowDiff === 0 && colDiff < 0) return 'horizontal-reverse';
-  if (colDiff === 0 && rowDiff > 0) return 'vertical';
-  if (colDiff === 0 && rowDiff < 0) return 'vertical-reverse';
-  
+  if (rowDiff === 0 && colDiff > 0) return "horizontal";
+  if (rowDiff === 0 && colDiff < 0) return "horizontal-reverse";
+  if (colDiff === 0 && rowDiff > 0) return "vertical";
+  if (colDiff === 0 && rowDiff < 0) return "vertical-reverse";
+
   // Check if it's a diagonal
   if (Math.abs(rowDiff) === Math.abs(colDiff)) {
-    if (rowDiff > 0 && colDiff > 0) return 'diagonal-right';
-    if (rowDiff > 0 && colDiff < 0) return 'diagonal-left';
-    if (rowDiff < 0 && colDiff > 0) return 'diagonal-right-reverse';
-    if (rowDiff < 0 && colDiff < 0) return 'diagonal-left-reverse';
+    if (rowDiff > 0 && colDiff > 0) return "diagonal-right";
+    if (rowDiff > 0 && colDiff < 0) return "diagonal-left";
+    if (rowDiff < 0 && colDiff > 0) return "diagonal-right-reverse";
+    if (rowDiff < 0 && colDiff < 0) return "diagonal-left-reverse";
   }
-  
+
   return null;
 };
 
 const getSelectedWord = (
-  board: any[][], 
-  startRow: number, 
-  startCol: number, 
+  board: any[][],
+  startRow: number,
+  startCol: number,
   direction: string
 ): string => {
-  let word = '';
+  let word = "";
   let currentRow = startRow;
   let currentCol = startCol;
   const gridSize = board.length;
-  
+
   // Determine step direction
   let rowStep = 0;
   let colStep = 0;
-  
+
   switch (direction) {
-    case 'horizontal':
+    case "horizontal":
       colStep = 1;
       break;
-    case 'horizontal-reverse':
+    case "horizontal-reverse":
       colStep = -1;
       break;
-    case 'vertical':
+    case "vertical":
       rowStep = 1;
       break;
-    case 'vertical-reverse':
+    case "vertical-reverse":
       rowStep = -1;
       break;
-    case 'diagonal-right':
+    case "diagonal-right":
       rowStep = 1;
       colStep = 1;
       break;
-    case 'diagonal-left':
+    case "diagonal-left":
       rowStep = 1;
       colStep = -1;
       break;
-    case 'diagonal-right-reverse':
+    case "diagonal-right-reverse":
       rowStep = -1;
       colStep = 1;
       break;
-    case 'diagonal-left-reverse':
+    case "diagonal-left-reverse":
       rowStep = -1;
       colStep = -1;
       break;
   }
-  
+
   // Collect letters in the direction
   while (
-    currentRow >= 0 && 
-    currentRow < gridSize && 
-    currentCol >= 0 && 
+    currentRow >= 0 &&
+    currentRow < gridSize &&
+    currentCol >= 0 &&
     currentCol < gridSize
   ) {
     word += board[currentRow][currentCol].letter;
     currentRow += rowStep;
     currentCol += colStep;
   }
-  
+
   return word;
 };
 
 const highlightCellsInDirection = (
-  board: any[][], 
-  startRow: number, 
-  startCol: number, 
+  board: any[][],
+  startRow: number,
+  startCol: number,
   direction: string
 ): any[][] => {
-  const updatedBoard = board.map(row => row.map(cell => ({
-    ...cell,
-    isHighlighted: false
-  })));
-  
+  const updatedBoard = board.map((row) =>
+    row.map((cell) => ({
+      ...cell,
+      isHighlighted: false,
+    }))
+  );
+
   let currentRow = startRow;
   let currentCol = startCol;
   const gridSize = board.length;
-  
+
   // Determine step direction
   let rowStep = 0;
   let colStep = 0;
-  
+
   switch (direction) {
-    case 'horizontal':
+    case "horizontal":
       colStep = 1;
       break;
-    case 'horizontal-reverse':
+    case "horizontal-reverse":
       colStep = -1;
       break;
-    case 'vertical':
+    case "vertical":
       rowStep = 1;
       break;
-    case 'vertical-reverse':
+    case "vertical-reverse":
       rowStep = -1;
       break;
-    case 'diagonal-right':
+    case "diagonal-right":
       rowStep = 1;
       colStep = 1;
       break;
-    case 'diagonal-left':
+    case "diagonal-left":
       rowStep = 1;
       colStep = -1;
       break;
-    case 'diagonal-right-reverse':
+    case "diagonal-right-reverse":
       rowStep = -1;
       colStep = 1;
       break;
-    case 'diagonal-left-reverse':
+    case "diagonal-left-reverse":
       rowStep = -1;
       colStep = -1;
       break;
   }
-  
+
   // Highlight cells in the direction
   while (
-    currentRow >= 0 && 
-    currentRow < gridSize && 
-    currentCol >= 0 && 
+    currentRow >= 0 &&
+    currentRow < gridSize &&
+    currentCol >= 0 &&
     currentCol < gridSize
   ) {
     if (currentRow === startRow && currentCol === startCol) {
@@ -372,91 +423,93 @@ const highlightCellsInDirection = (
     } else {
       updatedBoard[currentRow][currentCol].isHighlighted = true;
     }
-    
+
     currentRow += rowStep;
     currentCol += colStep;
   }
-  
+
   return updatedBoard;
 };
 
 const markFoundWord = (
-  board: any[][], 
-  startRow: number, 
-  startCol: number, 
+  board: any[][],
+  startRow: number,
+  startCol: number,
   direction: string
 ): any[][] => {
-  const updatedBoard = board.map(row => row.map(cell => ({
-    ...cell,
-    isSelected: false,
-    isHighlighted: false
-  })));
-  
+  const updatedBoard = board.map((row) =>
+    row.map((cell) => ({
+      ...cell,
+      isSelected: false,
+      isHighlighted: false,
+    }))
+  );
+
   let currentRow = startRow;
   let currentCol = startCol;
   const gridSize = board.length;
-  
+
   // Determine step direction
   let rowStep = 0;
   let colStep = 0;
-  
+
   switch (direction) {
-    case 'horizontal':
+    case "horizontal":
       colStep = 1;
       break;
-    case 'horizontal-reverse':
+    case "horizontal-reverse":
       colStep = -1;
       break;
-    case 'vertical':
+    case "vertical":
       rowStep = 1;
       break;
-    case 'vertical-reverse':
+    case "vertical-reverse":
       rowStep = -1;
       break;
-    case 'diagonal-right':
+    case "diagonal-right":
       rowStep = 1;
       colStep = 1;
       break;
-    case 'diagonal-left':
+    case "diagonal-left":
       rowStep = 1;
       colStep = -1;
       break;
-    case 'diagonal-right-reverse':
+    case "diagonal-right-reverse":
       rowStep = -1;
       colStep = 1;
       break;
-    case 'diagonal-left-reverse':
+    case "diagonal-left-reverse":
       rowStep = -1;
       colStep = -1;
       break;
   }
-  
+
   // Mark cells in the direction as found
   while (
-    currentRow >= 0 && 
-    currentRow < gridSize && 
-    currentCol >= 0 && 
+    currentRow >= 0 &&
+    currentRow < gridSize &&
+    currentCol >= 0 &&
     currentCol < gridSize
   ) {
     updatedBoard[currentRow][currentCol].isFound = true;
     currentRow += rowStep;
     currentCol += colStep;
   }
-  
+
   return updatedBoard;
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    alignItems: "center",
+    justifyContent: "flex-start",
     padding: 10,
   },
   loadingContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 
