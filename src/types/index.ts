@@ -34,6 +34,7 @@ export interface SudokuCell {
   value: number | null;
   isFixed: boolean;
   isError: boolean;
+  isLocked?: boolean;
   notes: boolean[];
 }
 

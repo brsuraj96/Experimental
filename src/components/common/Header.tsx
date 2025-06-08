@@ -289,6 +289,7 @@ const Header: React.FC<HeaderProps> = ({
     },
     pauseButtons: {
       width: "100%",
+      alignItems: "center",
     },
     pauseButton: {
       backgroundColor: currentTheme.colors.primary,

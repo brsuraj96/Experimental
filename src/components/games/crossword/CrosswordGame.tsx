@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Alert,
   Keyboard,
   Platform,
   Animated,
@@ -30,6 +29,8 @@ import {
 } from "./logic";
 import { theme } from "../../../styles/theme";
 import useSound from "../../../hooks/useSound";
+import Dialog from "../../common/Dialog";
+import { useTimer } from "../../../context/TimerContext";
 
 interface CrosswordGameProps {
   difficulty: Difficulty;
@@ -54,7 +55,9 @@ const CrosswordGame: React.FC<CrosswordGameProps> = ({
     "across"
   );
   const [activeClue, setActiveClue] = useState<CrosswordClue | null>(null);
-  const [inputValue, setInputValue] = useState<string>("");
+  const { formatTime } = useTimer();
+  const [inputValue, setInputValue] = useState("");
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const [isGameComplete, setIsGameComplete] = useState(false);
   const [completionPulse] = useState(new Animated.Value(0));
 
@@ -208,33 +211,18 @@ const CrosswordGame: React.FC<CrosswordGameProps> = ({
 
   // Handle reset
   const handleReset = () => {
-    Alert.alert(
-      "Reset Puzzle",
-      "Are you sure you want to reset the puzzle? All progress will be lost.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Reset",
-          style: "destructive",
-          onPress: () => {
-            const newLevel = generateLevel(difficulty);
-            setLevel(newLevel);
-            setBoard(newLevel.board);
-            setIsGameComplete(false);
-            setActiveCell(null);
-            setActiveClue(null);
+    setShowResetDialog(true);
+  };
 
-            if (newLevel.acrossClues.length > 0) {
-              const firstClue = newLevel.acrossClues[0];
-              handleCluePress(firstClue);
-            }
-          },
-        },
-      ]
+  const handleConfirmReset = () => {
+    setShowResetDialog(false);
+    setInputValue("");
+    setActiveCell(null);
+    setActiveClue(null);
+    const newBoard = level.board.map((row) =>
+      row.map((cell) => ({ ...cell, userLetter: "" }))
     );
+    setBoard(newBoard);
   };
 
   // Calculate the pulse color for completion animation
@@ -321,6 +309,26 @@ const CrosswordGame: React.FC<CrosswordGameProps> = ({
           />
         </View>
       </View>
+
+      {/* Reset confirmation dialog */}
+      <Dialog
+        visible={showResetDialog}
+        title="Reset Puzzle"
+        message="Are you sure you want to reset the puzzle? All progress will be lost."
+        buttons={[
+          {
+            text: "Cancel",
+            onPress: () => setShowResetDialog(false),
+            style: "cancel",
+          },
+          {
+            text: "Reset",
+            onPress: handleConfirmReset,
+            style: "destructive",
+          },
+        ]}
+        onDismiss={() => setShowResetDialog(false)}
+      />
 
       {/* Completion message */}
       {isGameComplete && (

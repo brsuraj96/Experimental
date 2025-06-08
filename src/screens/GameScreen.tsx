@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   BackHandler,
-  Alert,
   Vibration,
   AppState,
   AppStateStatus,
@@ -25,6 +24,7 @@ import CrosswordGame from "../components/games/crossword/CrosswordGame";
 import WordSearchGame from "../components/games/wordSearch/WordSearchGame";
 import SpotDifferenceGame from "../components/games/spotDifference/SpotDifferenceGame";
 import MatchstickGame from "../components/games/matchstick/MatchstickGame";
+import Dialog from "../components/common/Dialog"; // Import the custom Dialog component
 
 type GameScreenRouteProp = RouteProp<RootStackParamList, "Game">;
 type GameScreenNavigationProp = StackNavigationProp<RootStackParamList, "Game">;
@@ -42,31 +42,27 @@ const GameScreen = () => {
   const [moves, setMoves] = useState<number>(0);
   const [isGameCompleted, setIsGameCompleted] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   const isLandscape = orientation === "landscape";
 
-  useEffect(() => {
-    const backAction = () => {
-      // Pause the game first
-      handlePause();
-      Alert.alert(
-        "Exit Game",
-        "Are you sure you want to exit? Your progress will be lost.",
-        [
-          {
-            text: "Cancel",
-            onPress: () => {
-              handleResume(); // Resume if staying in game
-              return null;
-            },
-            style: "cancel",
-          },
-          { text: "Exit", onPress: () => navigation.goBack() },
-        ]
-      );
-      return true;
-    };
+  const handleExitGame = () => {
+    setShowExitDialog(false);
+    navigation.goBack();
+  };
 
+  const handleCancelExit = () => {
+    setShowExitDialog(false);
+    handleResume();
+  };
+
+  const backAction = () => {
+    handlePause();
+    setShowExitDialog(true);
+    return true;
+  };
+
+  useEffect(() => {
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       backAction
@@ -212,39 +208,13 @@ const GameScreen = () => {
         subtitle={difficulty}
         showBackButton
         onBack={() => {
-          // Pause the game first
-          handlePause();
+          backAction(); // Show exit confirmation dialog
           if (settings.audioEffect) {
             playSound("click");
           }
           if (settings.vibration) {
             Vibration.vibrate(50);
           }
-          Alert.alert(
-            "Exit Game",
-            "Are you sure you want to exit? Your progress will be lost.",
-            [
-              {
-                text: "Cancel",
-                style: "cancel",
-                onPress: () => {
-                  if (settings.audioEffect) {
-                    playSound("click");
-                  }
-                  handleResume(); // Resume if staying in game
-                },
-              },
-              {
-                text: "Exit",
-                onPress: () => {
-                  if (settings.audioEffect) {
-                    playSound("click");
-                  }
-                  navigation.goBack();
-                },
-              },
-            ]
-          );
         }}
         onReset={resetGame}
         onPause={handlePause}
@@ -269,6 +239,26 @@ const GameScreen = () => {
       >
         {renderGame()}
       </View>
+
+      {/* Exit confirmation dialog */}
+      <Dialog
+        visible={showExitDialog}
+        title="Exit Game"
+        message="Are you sure you want to exit? Your progress will be lost."
+        buttons={[
+          {
+            text: "Cancel",
+            onPress: handleCancelExit,
+            style: "cancel",
+          },
+          {
+            text: "Exit",
+            onPress: handleExitGame,
+            style: "destructive",
+          },
+        ]}
+        onDismiss={handleCancelExit}
+      />
     </View>
   );
 };
