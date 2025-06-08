@@ -35,6 +35,14 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({
     autoStart,
   });
 
+  React.useEffect(() => {
+    // Reset the timer when mounted
+    timerLogic.reset(initialTime);
+    if (autoStart) {
+      timerLogic.start();
+    }
+  }, [initialTime, autoStart]);
+
   return (
     <TimerContext.Provider value={timerLogic}>{children}</TimerContext.Provider>
   );

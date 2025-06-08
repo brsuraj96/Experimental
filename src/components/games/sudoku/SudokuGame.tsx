@@ -39,10 +39,25 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
 }) => {
   const { currentTheme } = useTheme();
   const { playSound } = useSound();
-  const { timer, start, pause, resume, reset } = useTimer();
+  const { timer, start, pause, resume, reset, isRunning } = useTimer();
   const [board, setBoard] = useState<SudokuBoard>(() =>
     generateSudoku(difficulty)
   );
+
+  // Handle timer state based on game state
+  useEffect(() => {
+    if (settings.timer) {
+      if (isPaused || isGameCompleted) {
+        pause();
+      } else {
+        if (!isRunning) {
+          start();
+        } else {
+          resume();
+        }
+      }
+    }
+  }, [isPaused, isGameCompleted, settings.timer, isRunning]);
   const [selectedCell, setSelectedCell] = useState<[number, number] | null>(
     null
   );

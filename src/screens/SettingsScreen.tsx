@@ -345,6 +345,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         title="Settings"
         showBackButton
         onBack={() => navigation.goBack()}
+        settings={{ ...settings, timer: false }} // Disable timer for settings screen
+        isGameCompleted={false}
+        isPaused={false}
       />
       <ScrollView
         style={[

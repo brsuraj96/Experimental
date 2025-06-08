@@ -7,6 +7,7 @@ import { GameProvider } from "./src/context/GameContext";
 import { WebSocketProvider } from "./src/context/WebSocketContext";
 import { Provider as PaperProvider } from "react-native-paper";
 import { SettingsProvider } from "./src/context/SettingsContext";
+import { TimerProvider } from "./src/context/TimerContext";
 import "setimmediate";
 
 // Separate component for the theme-aware content
@@ -38,17 +39,19 @@ const ThemedApp = () => {
 // Main app structure with proper provider nesting
 const App = () => {
   const AppContent = () => (
-    <SettingsProvider>
-      <ThemeProvider>
-        <PaperProvider>
-          <GameProvider>
-            <NavigationContainer>
-              <ThemedApp />
-            </NavigationContainer>
-          </GameProvider>
-        </PaperProvider>
-      </ThemeProvider>
-    </SettingsProvider>
+    <TimerProvider initialTime={0} autoStart={false}>
+      <SettingsProvider>
+        <ThemeProvider>
+          <PaperProvider>
+            <GameProvider>
+              <NavigationContainer>
+                <ThemedApp />
+              </NavigationContainer>
+            </GameProvider>
+          </PaperProvider>
+        </ThemeProvider>
+      </SettingsProvider>
+    </TimerProvider>
   );
 
   // Add WebSocketProvider for web platform only

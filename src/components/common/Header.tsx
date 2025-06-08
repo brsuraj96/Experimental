@@ -28,6 +28,7 @@ interface HeaderProps {
   onHint?: () => void;
   onUndo?: () => void;
   onReset?: () => void;
+  isTimer?: () => void;
   containerStyle?: ViewStyle;
   onDifficultyChange?: (difficulty: Difficulty) => void;
   showDifficultySelector?: boolean;
@@ -55,6 +56,7 @@ const Header: React.FC<HeaderProps> = ({
   onHint,
   onUndo,
   onReset,
+  isTimer = false,
   containerStyle,
   onDifficultyChange,
   showDifficultySelector,
@@ -91,8 +93,6 @@ const Header: React.FC<HeaderProps> = ({
       onDifficultyChange(itemValue);
     }
   };
-
-  console.log(timer, "time in header");
 
   const renderDifficultySelector = () => {
     if (Platform.OS === "android") {
@@ -351,7 +351,7 @@ const Header: React.FC<HeaderProps> = ({
           </View>
         </View>
         <View>
-          {settings.timer && (
+          {isTimer && settings?.timer && isGameCompleted !== undefined && (
             <View
               style={{
                 flexDirection: "row",
@@ -367,7 +367,6 @@ const Header: React.FC<HeaderProps> = ({
             </View>
           )}
         </View>
-
         <View style={styles.rightContainer}>
           {onUndo && (
             <TouchableOpacity
@@ -449,8 +448,11 @@ const Header: React.FC<HeaderProps> = ({
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => {
-                onPause?.(); // Pause the game before navigating
-                navigation.navigate("Settings");
+                // First pause the game, then navigate to settings
+                onPause?.();
+                setTimeout(() => {
+                  navigation.navigate("Settings");
+                }, 0);
               }}
               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >

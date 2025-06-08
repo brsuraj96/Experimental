@@ -16,7 +16,6 @@ import { useTheme } from "../context/ThemeContext";
 import { useSettings } from "../context/SettingsContext";
 import useOrientation from "../hooks/useOrientation";
 import useSound from "../hooks/useSound";
-import { TimerProvider } from "../context/TimerContext";
 import Header from "../components/common/Header";
 import SudokuGame from "../components/games/sudoku/SudokuGame";
 import SlideTilesGame from "../components/games/slideTiles/SlideTilesGame";
@@ -201,78 +200,76 @@ const GameScreen = () => {
         return <View />;
     }
   };
-
   return (
-    <TimerProvider initialTime={0} autoStart={settings.timer}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: currentTheme.colors.background },
+      ]}
+    >
+      <Header
+        title={gameType}
+        subtitle={difficulty}
+        showBackButton
+        onBack={() => {
+          // Pause the game first
+          handlePause();
+          if (settings.audioEffect) {
+            playSound("click");
+          }
+          if (settings.vibration) {
+            Vibration.vibrate(50);
+          }
+          Alert.alert(
+            "Exit Game",
+            "Are you sure you want to exit? Your progress will be lost.",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+                onPress: () => {
+                  if (settings.audioEffect) {
+                    playSound("click");
+                  }
+                  handleResume(); // Resume if staying in game
+                },
+              },
+              {
+                text: "Exit",
+                onPress: () => {
+                  if (settings.audioEffect) {
+                    playSound("click");
+                  }
+                  navigation.goBack();
+                },
+              },
+            ]
+          );
+        }}
+        onReset={resetGame}
+        onPause={handlePause}
+        onResume={handleResume}
+        isPaused={isPaused}
+        settings={settings}
+        isGameCompleted={isGameCompleted}
+        containerStyle={{
+          height: isLandscape ? 60 : 72,
+          paddingVertical: isLandscape ? 4 : 10,
+        }}
+        isThemeSelectorVisible
+        showSettings
+      />
+
       <View
         style={[
-          styles.container,
-          { backgroundColor: currentTheme.colors.background },
+          styles.gameContainer,
+          isLandscape ? styles.landscapeContainer : styles.portraitContainer,
+          isPaused && styles.blurContainer,
         ]}
       >
-        <Header
-          title={gameType}
-          subtitle={difficulty}
-          showBackButton
-          onBack={() => {
-            // Pause the game first
-            handlePause();
-            if (settings.audioEffect) {
-              playSound("click");
-            }
-            if (settings.vibration) {
-              Vibration.vibrate(50);
-            }
-            Alert.alert(
-              "Exit Game",
-              "Are you sure you want to exit? Your progress will be lost.",
-              [
-                {
-                  text: "Cancel",
-                  style: "cancel",
-                  onPress: () => {
-                    if (settings.audioEffect) {
-                      playSound("click");
-                    }
-                    handleResume(); // Resume if staying in game
-                  },
-                },
-                {
-                  text: "Exit",
-                  onPress: () => {
-                    if (settings.audioEffect) {
-                      playSound("click");
-                    }
-                    navigation.goBack();
-                  },
-                },
-              ]
-            );
-          }}
-          onReset={resetGame}
-          onPause={handlePause}
-          onResume={handleResume}
-          isPaused={isPaused}
-          settings={settings}
-          isGameCompleted={isGameCompleted}
-          containerStyle={{
-            height: isLandscape ? 60 : 72,
-            paddingVertical: isLandscape ? 4 : 10,
-          }}
-          showSettings
-        />
-
-        <View
-          style={[
-            styles.gameContainer,
-            isLandscape ? styles.landscapeContainer : styles.portraitContainer,
-            isPaused && styles.blurContainer,
-          ]}
-        >
-          {renderGame()}
-        </View>
+        {renderGame()}
       </View>
-    </TimerProvider>
+    </View>
   );
 };
 
