@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
   BackHandler,
   Alert,
-  Platform,
-  TouchableWithoutFeedback,
   Vibration,
   AppState,
   AppStateStatus,
@@ -16,6 +14,9 @@ import { RootStackParamList, GameType, Difficulty } from "../types";
 import { theme } from "../styles/theme";
 import { useTheme } from "../context/ThemeContext";
 import { useSettings } from "../context/SettingsContext";
+import useOrientation from "../hooks/useOrientation";
+import useSound from "../hooks/useSound";
+import { TimerProvider } from "../context/TimerContext";
 import Header from "../components/common/Header";
 import SudokuGame from "../components/games/sudoku/SudokuGame";
 import SlideTilesGame from "../components/games/slideTiles/SlideTilesGame";
@@ -25,8 +26,6 @@ import CrosswordGame from "../components/games/crossword/CrosswordGame";
 import WordSearchGame from "../components/games/wordSearch/WordSearchGame";
 import SpotDifferenceGame from "../components/games/spotDifference/SpotDifferenceGame";
 import MatchstickGame from "../components/games/matchstick/MatchstickGame";
-import useOrientation from "../hooks/useOrientation";
-import useSound from "../hooks/useSound";
 
 type GameScreenRouteProp = RouteProp<RootStackParamList, "Game">;
 type GameScreenNavigationProp = StackNavigationProp<RootStackParamList, "Game">;
@@ -39,12 +38,11 @@ const GameScreen = () => {
   const orientation = useOrientation();
   const { playSound } = useSound();
   const { settings } = useSettings();
-
+  const { currentTheme } = useTheme();
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
   const [moves, setMoves] = useState<number>(0);
   const [isGameCompleted, setIsGameCompleted] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState(false);
-  const { currentTheme } = useTheme();
 
   const isLandscape = orientation === "landscape";
 
@@ -154,16 +152,10 @@ const GameScreen = () => {
 
   const handlePause = () => {
     setIsPaused(true);
-    if (settings.audioEffect) {
-      playSound("click");
-    }
   };
 
   const handleResume = () => {
     setIsPaused(false);
-    if (settings.audioEffect) {
-      playSound("click");
-    }
   };
 
   const renderGame = () => {
@@ -183,10 +175,11 @@ const GameScreen = () => {
           <SudokuGame
             {...gameProps}
             isGameCompleted={isGameCompleted}
-            onDifficultyChange={(newDifficulty: Difficulty) => {
+            onDifficultyChange={(newDifficulty) => {
               setDifficulty(newDifficulty);
-              setGameStartTime(Date.now()); // Keep tracking start time for completion screen
+              setGameStartTime(Date.now()); // Reset start time for new difficulty
               setIsGameCompleted(false);
+              setMoves(0);
             }}
           />
         );
@@ -210,72 +203,76 @@ const GameScreen = () => {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: currentTheme.colors.background },
-      ]}
-    >
-      <Header
-        title={gameType}
-        subtitle={difficulty}
-        showBackButton
-        onBack={() => {
-          // Pause the game first
-          handlePause();
-          if (settings.audioEffect) {
-            playSound("click");
-          }
-          if (settings.vibration) {
-            Vibration.vibrate(50);
-          }
-          Alert.alert(
-            "Exit Game",
-            "Are you sure you want to exit? Your progress will be lost.",
-            [
-              {
-                text: "Cancel",
-                style: "cancel",
-                onPress: () => {
-                  if (settings.audioEffect) {
-                    playSound("click");
-                  }
-                  handleResume(); // Resume if staying in game
-                },
-              },
-              {
-                text: "Exit",
-                onPress: () => {
-                  if (settings.audioEffect) {
-                    playSound("click");
-                  }
-                  navigation.goBack();
-                },
-              },
-            ]
-          );
-        }}
-        onReset={resetGame}
-        onPause={handlePause}
-        onResume={handleResume}
-        isPaused={isPaused}
-        containerStyle={{
-          height: isLandscape ? 60 : 72,
-          paddingVertical: isLandscape ? 4 : 10,
-        }}
-        showSettings
-      />
-
+    <TimerProvider initialTime={0} autoStart={settings.timer}>
       <View
         style={[
-          styles.gameContainer,
-          isLandscape ? styles.landscapeContainer : styles.portraitContainer,
-          isPaused && styles.blurContainer,
+          styles.container,
+          { backgroundColor: currentTheme.colors.background },
         ]}
       >
-        {renderGame()}
+        <Header
+          title={gameType}
+          subtitle={difficulty}
+          showBackButton
+          onBack={() => {
+            // Pause the game first
+            handlePause();
+            if (settings.audioEffect) {
+              playSound("click");
+            }
+            if (settings.vibration) {
+              Vibration.vibrate(50);
+            }
+            Alert.alert(
+              "Exit Game",
+              "Are you sure you want to exit? Your progress will be lost.",
+              [
+                {
+                  text: "Cancel",
+                  style: "cancel",
+                  onPress: () => {
+                    if (settings.audioEffect) {
+                      playSound("click");
+                    }
+                    handleResume(); // Resume if staying in game
+                  },
+                },
+                {
+                  text: "Exit",
+                  onPress: () => {
+                    if (settings.audioEffect) {
+                      playSound("click");
+                    }
+                    navigation.goBack();
+                  },
+                },
+              ]
+            );
+          }}
+          onReset={resetGame}
+          onPause={handlePause}
+          onResume={handleResume}
+          isPaused={isPaused}
+          settings={settings}
+          isGameCompleted={isGameCompleted}
+          containerStyle={{
+            height: isLandscape ? 60 : 72,
+            paddingVertical: isLandscape ? 4 : 10,
+          }}
+          showSettings
+        />
+
+        <View
+          style={[
+            styles.gameContainer,
+            isLandscape ? styles.landscapeContainer : styles.portraitContainer,
+            isPaused && styles.blurContainer,
+          ]}
+        >
+          {renderGame()}
+        </View>
       </View>
-    </View>
+    </TimerProvider>
   );
 };
 

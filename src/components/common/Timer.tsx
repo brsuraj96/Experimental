@@ -2,7 +2,7 @@ import React from "react";
 import { Text, StyleSheet, View } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
-import { usePauseTimer } from "./TimerLogic";
+import { useTimer } from "../../context/TimerContext";
 
 interface TimerProps {
   initialTime?: number;
@@ -16,19 +16,19 @@ const Timer: React.FC<TimerProps> = ({
   isPaused = false,
 }) => {
   const { currentTheme } = useTheme();
-  const { timer, formatTime, pause, resume } = usePauseTimer({
-    initialTime,
-    autoStart: isRunning,
-  });
+  const { formatTime, pause, resume, isRunning: timerRunning } = useTimer();
 
-  // Handle pause/resume when isPaused changes
+  // Handle pause/resume transitions immediately
   React.useEffect(() => {
-    if (isPaused) {
-      pause();
-    } else {
-      resume();
-    }
-  }, [isPaused, pause, resume]);
+    const handlePauseResume = () => {
+      if (isPaused && timerRunning) {
+        pause();
+      } else if (!isPaused && !timerRunning) {
+        resume();
+      }
+    };
+    handlePauseResume();
+  }, [isPaused, timerRunning, pause, resume]);
   const styles = StyleSheet.create({
     container: {
       flexDirection: "row",

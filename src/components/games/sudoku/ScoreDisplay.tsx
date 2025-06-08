@@ -146,7 +146,6 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               {notification.message}
               {notification.points !== 0 && (
                 <Text style={styles.points}>
-                  {" "}
                   {notification.points > 0 ? "+" : ""}
                   {notification.points}
                 </Text>

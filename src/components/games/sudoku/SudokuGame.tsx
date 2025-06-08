@@ -3,7 +3,7 @@ import { View, StyleSheet, Alert, Vibration } from "react-native";
 import { Difficulty, GameType, SudokuBoard } from "../../../types";
 import SudokuBoardComponent from "./SudokuBoard";
 import SudokuControls from "./SudokuControls";
-import { usePauseTimer } from "../../common/TimerLogic";
+import { useTimer } from "../../../context/TimerContext";
 import {
   generateSudoku,
   validateSudoku,
@@ -35,10 +35,11 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   isGameCompleted,
   onDifficultyChange,
   settings,
-  isPaused,
+  isPaused = false,
 }) => {
   const { currentTheme } = useTheme();
   const { playSound } = useSound();
+  const { timer, start, pause, resume, reset } = useTimer();
   const [board, setBoard] = useState<SudokuBoard>(() =>
     generateSudoku(difficulty)
   );
@@ -58,43 +59,43 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   const [score, setScore] = useState<number>(0);
   const [previousScore, setPreviousScore] = useState<number>(0);
   const [correctStreak, setCorrectStreak] = useState(0);
-  const {
-    timer: time,
-    start: startTimer,
-    pause: pauseTimer,
-    resume: resumeTimer,
-    reset: resetTimer,
-  } = usePauseTimer({
-    initialTime: 0,
-    autoStart: settings.timer,
-  });
+  // const {
+  //   timer: time,
+  //   start: startTimer,
+  //   pause: pauseTimer,
+  //   resume: resumeTimer,
+  //   reset: resetTimer,
+  // } = usePauseTimer({
+  //   initialTime: 0,
+  //   autoStart: settings.timer,
+  // });
   const scoreManager = useRef(new ScoreManager(GameType.SUDOKU, difficulty));
   const [isPausing, setIsPausing] = useState(false);
 
   // Handle timer pause/resume based on game state
   useEffect(() => {
     if (!settings.timer || isGameCompleted) {
-      pauseTimer();
+      pause();
       return;
     }
 
     if (isPaused) {
       setIsPausing(true);
-      pauseTimer();
+      pause();
     } else if (isPausing) {
       setIsPausing(false);
-      resumeTimer();
-    } else if (!time) {
-      startTimer();
+      resume();
+    } else if (!timer) {
+      start();
     }
   }, [
     settings.timer,
     isPaused,
     isGameCompleted,
-    pauseTimer,
-    resumeTimer,
-    startTimer,
-    time,
+    pause,
+    resume,
+    start,
+    timer,
     isPausing,
   ]);
 
@@ -182,7 +183,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     setLockedNumber(null);
     setHistory([{ board: newBoard, selected: null }]);
     setMistakes(0);
-    resetTimer(0);
+    reset();
     setIsPausing(false);
     scoreManager.current = new ScoreManager(GameType.SUDOKU, difficulty);
   }, [difficulty]);
@@ -666,7 +667,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
       <GameHeader
         mistakes={mistakes}
         difficulty={difficulty}
-        time={time}
+        time={timer}
         isGameCompleted={isGameCompleted}
         showDifficultySelector
         onDifficultyChange={onDifficultyChange}

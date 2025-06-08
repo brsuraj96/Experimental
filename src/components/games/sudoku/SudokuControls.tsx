@@ -330,13 +330,16 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
           numberFirstMode && lockedNumber !== null && !isLocked;
         const remaining = remainingNumbers[number - 1] || 0;
         const isLongPressed = longPressActive === number;
+        // Disable the number button when all instances of this number have been placed
+        const isFullyUsed = remaining === 0;
 
         return (
           <View
             key={number}
             style={[
               styles.numberButton,
-              (isDisabled || isDisabledByLock) && styles.disabledNumberButton,
+              (isDisabled || isDisabledByLock || isFullyUsed) &&
+                styles.disabledNumberButton,
               numberFirstMode && isLocked && styles.lockedButton,
               numberFirstMode &&
                 selectedNumber === number &&
@@ -424,12 +427,12 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
               onPress={() => onNumberPress(number)}
               onLongPress={() => handleLongPressStart(number)}
               onPressOut={handlePressOut}
-              disabled={isDisabled || isDisabledByLock}
+              disabled={isDisabled || isDisabledByLock || isFullyUsed}
             >
               <Text
                 style={[
                   styles.numberText,
-                  isDisabled && styles.disabledNumberText,
+                  (isDisabled || isFullyUsed) && styles.disabledNumberText,
                   numberFirstMode && isLocked && styles.lockedNumberText,
                 ]}
               >
