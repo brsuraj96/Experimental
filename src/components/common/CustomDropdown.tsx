@@ -1,160 +1,151 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-  Modal,
-  TouchableWithoutFeedback,
-  Platform,
-} from "react-native";
-import React, { useCallback, useRef, useState } from "react";
-import { AntDesign } from "@expo/vector-icons";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
+import { FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
+import { Theme } from "../../styles/theme";
 
-type OptionItem = {
-  value: string;
-  label: string;
-};
-
-interface DropDownProps {
-  data?: OptionItem[];
-  onChange: (item: OptionItem) => void;
-  placeholder?: string;
+interface CustomDropdownProps<T> {
+  value: T;
+  options: { label: string; value: T }[];
+  onValueChange: (value: T) => void;
+  style?: any;
 }
 
-export default function Dropdown({
-  data,
-  onChange,
-  placeholder,
-}: DropDownProps) {
+const CustomDropdown = <T extends string>({
+  value,
+  options,
+  onValueChange,
+  style,
+}: CustomDropdownProps<T>) => {
+  const [isOpen, setIsOpen] = useState(false);
   const { currentTheme } = useTheme();
+  const selectedOption = options.find((option) => option.value === value);
 
-  const [expanded, setExpanded] = useState(false);
-
-  const toggleExpanded = useCallback(() => setExpanded(!expanded), [expanded]);
-
-  const [value, setValue] = useState("");
-
-  const buttonRef = useRef<View>(null);
-
-  const [top, setTop] = useState(0);
-
-  const onSelect = useCallback((item: OptionItem) => {
-    onChange(item);
-    setValue(item.label);
-    setExpanded(false);
-  }, []);
-
-  const styles = StyleSheet.create({
-    backdrop: {
-      padding: 20,
-      justifyContent: "center",
-      alignItems: "center",
-      flex: 1,
-    },
-    optionItem: {
-      height: 32,
-      justifyContent: "center",
-      paddingHorizontal: 8,
-    },
-    separator: {
-      height: 4,
-    },
-    options: {
-      position: "relative",
-      backgroundColor: currentTheme.colors.backgroundLight,
-      width: 120,
-      padding: 8,
-      borderRadius: 6,
-      maxHeight: 200,
-    },
-    text: {
-      fontSize: 12,
-      color: currentTheme.colors.text,
+  const themedStyles = StyleSheet.create({
+    container: {
+      minWidth: 120,
+      ...style,
     },
     button: {
-      height: 32,
-      backgroundColor: currentTheme.colors.backgroundLight,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 8,
-      justifyContent: "center",
-    },
-    buttonContent: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      width: 105,
+      padding: 8,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: currentTheme.colors.border,
+      backgroundColor: currentTheme.colors.backgroundLight,
     },
-    optionText: {
+    buttonText: {
       fontSize: 12,
       color: currentTheme.colors.text,
+    },
+    modalContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    dropdownContainer: {
+      backgroundColor: currentTheme.colors.backgroundLight,
+      borderRadius: 12,
+      padding: 16,
+      width: "80%",
+      maxWidth: 300,
+      maxHeight: "80%",
+    },
+    option: {
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: currentTheme.colors.border,
+    },
+    optionText: {
+      fontSize: 16,
+      color: currentTheme.colors.text,
+    },
+    selectedOption: {
+      backgroundColor: currentTheme.colors.backgroundMedium,
+    },
+    selectedOptionText: {
+      color: currentTheme.colors.primary,
+      fontWeight: "600",
+    },
+    closeButton: {
+      marginTop: 16,
+      padding: 12,
+      borderRadius: 8,
+      backgroundColor: currentTheme.colors.primary,
+      alignItems: "center",
+    },
+    closeButtonText: {
+      color: currentTheme.colors.background,
+      fontSize: 16,
+      fontWeight: "600",
     },
   });
 
   return (
-    <View
-      ref={buttonRef}
-      onLayout={(event) => {
-        const layout = event.nativeEvent.layout;
-        const topOffset = layout.y;
-        const heightOfComponent = layout.height;
-
-        const finalValue =
-          topOffset + heightOfComponent + (Platform.OS === "android" ? -32 : 3);
-
-        setTop(finalValue);
-      }}
-    >
+    <View style={themedStyles.container}>
       <TouchableOpacity
-        style={styles.button}
-        activeOpacity={0.8}
-        onPress={toggleExpanded}
+        style={themedStyles.button}
+        onPress={() => setIsOpen(true)}
       >
-        <View style={styles.buttonContent}>
-          <Text style={styles.text}>{value || placeholder}</Text>
-          <AntDesign
-            name={expanded ? "caretup" : "caretdown"}
-            color={currentTheme.colors.text}
-            size={12}
-          />
-        </View>
+        <Text style={themedStyles.buttonText}>
+          {selectedOption?.label || "Select"}
+        </Text>
+        <FontAwesome5
+          name="chevron-down"
+          size={16}
+          color={currentTheme.colors.text}
+        />
       </TouchableOpacity>
-      {expanded ? (
-        <Modal visible={expanded} transparent>
-          <TouchableWithoutFeedback onPress={() => setExpanded(false)}>
-            <View style={styles.backdrop}>
-              <View
+
+      <Modal
+        visible={isOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsOpen(false)}
+      >
+        <TouchableOpacity
+          style={themedStyles.modalContainer}
+          activeOpacity={1}
+          onPress={() => setIsOpen(false)}
+        >
+          <View style={themedStyles.dropdownContainer}>
+            {options.map((option) => (
+              <TouchableOpacity
+                key={option.value}
                 style={[
-                  styles.options,
-                  {
-                    top: -148,
-                    right: 10,
-                  },
+                  themedStyles.option,
+                  option.value === value && themedStyles.selectedOption,
                 ]}
+                onPress={() => {
+                  onValueChange(option.value);
+                  setIsOpen(false);
+                }}
               >
-                <FlatList
-                  keyExtractor={(item) => item.value}
-                  data={data}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      style={styles.optionItem}
-                      onPress={() => onSelect(item)}
-                    >
-                      <Text style={styles.optionText}>{item.label}</Text>
-                    </TouchableOpacity>
-                  )}
-                  ItemSeparatorComponent={() => (
-                    <View style={styles.separator} />
-                  )}
-                />
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-      ) : null}
+                <Text
+                  style={[
+                    themedStyles.optionText,
+                    option.value === value && themedStyles.selectedOptionText,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={themedStyles.closeButton}
+              onPress={() => setIsOpen(false)}
+            >
+              <Text style={themedStyles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
-}
+};
+
+export default CustomDropdown;

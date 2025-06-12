@@ -9,7 +9,7 @@ import {
   clearConnections,
 } from "./logic";
 import { theme } from "../../../styles/theme";
-import useSound from "../../../hooks/useSound";
+import { useSound } from "../../../hooks/useSound";
 
 interface FlowFreeGameProps {
   difficulty: Difficulty;

@@ -28,7 +28,7 @@ import {
   getHint,
 } from "./logic";
 import { theme } from "../../../styles/theme";
-import useSound from "../../../hooks/useSound";
+import { useSound } from "../../../hooks/useSound";
 import Dialog from "../../common/Dialog";
 import { useTimer } from "../../../context/TimerContext";
 

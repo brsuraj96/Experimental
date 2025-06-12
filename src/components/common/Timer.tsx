@@ -5,30 +5,15 @@ import { useTheme } from "../../context/ThemeContext";
 import { useTimer } from "../../context/TimerContext";
 
 interface TimerProps {
-  initialTime?: number;
-  isRunning: boolean;
   isPaused?: boolean;
 }
 
 const Timer: React.FC<TimerProps> = ({
-  initialTime = 0,
-  isRunning,
   isPaused = false,
-}) => {
+}): React.ReactElement => {
   const { currentTheme } = useTheme();
-  const { formatTime, pause, resume, isRunning: timerRunning } = useTimer();
+  const { formatTime } = useTimer();
 
-  // Handle pause/resume transitions immediately
-  React.useEffect(() => {
-    const handlePauseResume = () => {
-      if (isPaused && timerRunning) {
-        pause();
-      } else if (!isPaused && !timerRunning) {
-        resume();
-      }
-    };
-    handlePauseResume();
-  }, [isPaused, timerRunning, pause, resume]);
   const styles = StyleSheet.create({
     container: {
       flexDirection: "row",

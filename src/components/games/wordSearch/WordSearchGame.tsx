@@ -7,7 +7,7 @@ import {
   WordSearchWord,
 } from "../../../types";
 import { theme } from "../../../styles/theme";
-import useSound from "../../../hooks/useSound";
+import { useSound } from "../../../hooks/useSound";
 import WordSearchBoard from "./WordSearchBoard";
 import WordList from "./WordList";
 import { generateWordSearchLevel } from "./wordSearchGenerator";

@@ -63,13 +63,6 @@ const defaultProgress: GameProgress = {
     [Difficulty.HARD]: 0,
     [Difficulty.EXPERT]: 0,
   },
-  [GameType.JIGSAW]: {
-    [Difficulty.BEGINNER]: 0,
-    [Difficulty.EASY]: 0,
-    [Difficulty.MEDIUM]: 0,
-    [Difficulty.HARD]: 0,
-    [Difficulty.EXPERT]: 0,
-  },
   [GameType.TRIVIA]: {
     [Difficulty.BEGINNER]: 0,
     [Difficulty.EASY]: 0,

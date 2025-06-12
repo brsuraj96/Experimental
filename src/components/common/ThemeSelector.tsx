@@ -1,11 +1,19 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, TouchableOpacity, StyleSheet, Switch, Text } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
+import { useSettings } from "../../context/SettingsContext";
 import { Themes } from "../../styles/theme";
 
 const ThemeSelector: React.FC = () => {
   const { themeType, setThemeType, currentTheme } = useTheme();
+  const { baseSettings, updateBaseSettings } = useSettings();
+  const [localDarkMode, setLocalDarkMode] = useState(baseSettings.darkMode);
+
+  // Update local state when baseSettings changes
+  useEffect(() => {
+    setLocalDarkMode(baseSettings.darkMode);
+  }, [baseSettings.darkMode]);
 
   const themeOptions = Object.keys(Themes).map((key) => ({
     type: key as keyof typeof Themes,
@@ -72,6 +80,13 @@ const ThemeSelector: React.FC = () => {
 
   const isDarkTheme = themeType === "dark";
 
+  const handleDarkModeChange = (value: boolean) => {
+    // Update local state immediately for responsive UI
+    setLocalDarkMode(value);
+    // Update the dark mode setting
+    updateBaseSettings({ darkMode: value });
+  };
+
   return (
     <View style={themedStyles.container}>
       <View style={themedStyles.colorContainer}>
@@ -83,7 +98,10 @@ const ThemeSelector: React.FC = () => {
                 { backgroundColor: option.color },
                 themeType === option.type && themedStyles.selectedColor,
               ]}
-              onPress={() => setThemeType(option.type)}
+              onPress={() => {
+                // Only update the theme type, don't update dark mode setting
+                setThemeType(option.type);
+              }}
             >
               {themeType === option.type && (
                 <FontAwesome5
@@ -101,17 +119,14 @@ const ThemeSelector: React.FC = () => {
       <View style={themedStyles.syncContainer}>
         <Text style={themedStyles.colorName}>Dark Mode:</Text>
         <Switch
-          value={isDarkTheme}
-          onValueChange={(value) => setThemeType(value ? "dark" : "default")}
+          value={localDarkMode}
+          onValueChange={handleDarkModeChange}
           trackColor={{
-            false: currentTheme.colors.backgroundLight,
+            false: currentTheme.colors.border,
             true: currentTheme.colors.primary,
           }}
-          thumbColor={
-            isDarkTheme
-              ? currentTheme.colors.text
-              : currentTheme.colors.backgroundDark
-          }
+          thumbColor={currentTheme.colors.background}
+          ios_backgroundColor={currentTheme.colors.border}
         />
       </View>
     </View>

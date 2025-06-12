@@ -25,33 +25,25 @@ interface TimerProviderProps {
   autoStart?: boolean;
 }
 
-export const TimerProvider: React.FC<TimerProviderProps> = ({
-  children,
-  initialTime = 0,
-  autoStart = false,
-}) => {
-  const timerLogic = usePauseTimer({
-    initialTime,
-    autoStart,
-  });
-
-  React.useEffect(() => {
-    // Reset the timer when mounted
-    timerLogic.reset(initialTime);
-    if (autoStart) {
-      timerLogic.start();
-    }
-  }, [initialTime, autoStart]);
-
-  return (
-    <TimerContext.Provider value={timerLogic}>{children}</TimerContext.Provider>
-  );
-};
-
-export const useTimer = (): TimerContextType => {
+export const useTimer = () => {
   const context = useContext(TimerContext);
   if (!context) {
     throw new Error("useTimer must be used within a TimerProvider");
   }
   return context;
+};
+
+export const TimerProvider: React.FC<TimerProviderProps> = ({
+  children,
+  initialTime = 0,
+  autoStart = false,
+}): React.ReactElement => {
+  const timerLogic = usePauseTimer({
+    initialTime,
+    autoStart,
+  });
+
+  return (
+    <TimerContext.Provider value={timerLogic}>{children}</TimerContext.Provider>
+  );
 };

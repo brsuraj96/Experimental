@@ -10,7 +10,7 @@ import {
   getConnectedPipes,
   getHint,
 } from "./logic";
-import useSound from "../../../hooks/useSound";
+import { useSound } from "../../../hooks/useSound";
 import { theme } from "../../../styles/theme";
 
 interface WaterFlowGameProps {
@@ -112,7 +112,7 @@ const WaterFlowGame: React.FC<WaterFlowGameProps> = ({
     );
 
     if (hintPosition) {
-      playSound("hint");
+      playSound("move");
 
       // Highlight the pipe by temporarily setting it as connected
       const newBoard = [...board];

@@ -83,7 +83,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
           size={16}
           color={currentTheme.colors.accent}
         />
-        <Text>{"Score: "}</Text>
+        <Text style={{ color: currentTheme.colors.text }}>{"Score: "}</Text>
         <Animated.View
           style={{
             transform: [
@@ -111,6 +111,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               styles.notification,
               {
                 opacity: notificationAnims.current[notification.id] || 0,
+                backgroundColor: currentTheme.colors.backgroundMedium,
                 transform: [
                   {
                     translateY: (
@@ -135,7 +136,14 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             ]}
           >
             {notification.icon && (
-              <Text style={styles.notificationIcon}>{notification.icon}</Text>
+              <Text
+                style={[
+                  styles.notificationIcon,
+                  { color: currentTheme.colors.text },
+                ]}
+              >
+                {notification.icon}
+              </Text>
             )}
             <Text
               style={[
@@ -145,7 +153,12 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             >
               {notification.message}
               {notification.points !== 0 && (
-                <Text style={styles.points}>
+                <Text
+                  style={[
+                    styles.points,
+                    { color: notification.color || currentTheme.colors.accent },
+                  ]}
+                >
                   {notification.points > 0 ? "+" : ""}
                   {notification.points}
                 </Text>
@@ -155,7 +168,12 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         ))}
       </View>
 
-      <View style={styles.progressBarContainer}>
+      <View
+        style={[
+          styles.progressBarContainer,
+          { backgroundColor: currentTheme.colors.backgroundMedium },
+        ]}
+      >
         <Animated.View
           style={[
             styles.progressBar,

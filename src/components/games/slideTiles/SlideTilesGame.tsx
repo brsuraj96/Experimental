@@ -17,15 +17,23 @@ import {
   getBoardSize,
 } from "./logic";
 import { theme } from "../../../styles/theme";
-import useSound from "../../../hooks/useSound";
-import { Settings } from "../../../context/SettingsContext";
+import { useSound } from "../../../hooks/useSound";
+import { SlideTilesSettings } from "../../../types/settings";
+
+// Extend SlideTilesSettings with additional properties needed for this component
+interface ExtendedSlideTilesSettings extends SlideTilesSettings {
+  timer: boolean;
+  completionRate: boolean;
+  lightningMode: boolean;
+  showScore: boolean;
+}
 
 interface SlideTilesGameProps {
   difficulty: Difficulty;
   onMove: () => void;
   onComplete: () => void;
   orientation: "portrait" | "landscape";
-  settings: Settings;
+  settings: ExtendedSlideTilesSettings;
 }
 
 const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
@@ -46,19 +54,15 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
 
   // Timer implementation based on settings
   useEffect(() => {
-    // Calculate if the board is solved
     const boardSolved = isSolved(board);
 
-    // Only start/stop the timer when these conditions change
-    if (settings.timer && gameStarted && !boardSolved) {
-      // Start the timer if it's not already running
+    if (settings.showTimer && gameStarted && !boardSolved) {
       if (!timerRef.current) {
         timerRef.current = setInterval(() => {
           setTime((prev) => prev + 1);
         }, 1000);
       }
     } else if (timerRef.current) {
-      // Stop the timer if it's running
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
@@ -69,7 +73,7 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
         timerRef.current = null;
       }
     };
-  }, [settings.timer, gameStarted, board]);
+  }, [settings.showTimer, gameStarted, board]);
 
   // Initialize the game when difficulty changes
   useEffect(() => {
@@ -199,14 +203,14 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
             <Text style={styles.infoValue}>{moves}</Text>
           </View>
 
-          {settings.timer && (
+          {settings.showTimer && (
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Time</Text>
               <Text style={styles.infoValue}>{formatTime(time)}</Text>
             </View>
           )}
 
-          {!settings.timer && (
+          {!settings.showTimer && (
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Size</Text>
               <Text style={styles.infoValue}>

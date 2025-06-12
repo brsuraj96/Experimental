@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, Alert, Vibration } from "react-native";
-import { Difficulty, GameType, SudokuBoard } from "../../../types";
+import {
+  Difficulty,
+  GameType,
+  SudokuBoard,
+  SudokuSettings,
+} from "../../../types";
 import SudokuBoardComponent from "./SudokuBoard";
 import SudokuControls from "./SudokuControls";
 import { useTimer } from "../../../context/TimerContext";
@@ -11,9 +16,8 @@ import {
   getHint,
 } from "./logic";
 import { useTheme } from "../../../context/ThemeContext";
-import useSound from "../../../hooks/useSound";
+import { useSound } from "../../../hooks/useSound";
 import GameHeader from "./GameHeader";
-import { Settings } from "../../../context/SettingsContext";
 import { ScoreManager } from "../../../utils/scoring";
 
 interface SudokuGameProps {
@@ -23,9 +27,11 @@ interface SudokuGameProps {
   orientation: "portrait" | "landscape";
   isGameCompleted: boolean;
   onDifficultyChange: (difficulty: Difficulty) => void;
-  settings: Settings;
+  settings: SudokuSettings;
   isPaused?: boolean;
 }
+
+const SUDOKU_MISTAKE_LIMIT = 3;
 
 const SudokuGame: React.FC<SudokuGameProps> = ({
   difficulty,
@@ -36,7 +42,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   onDifficultyChange,
   settings,
   isPaused = false,
-}) => {
+}): React.ReactElement => {
   const { currentTheme } = useTheme();
   const { playSound } = useSound();
   const { timer, start, pause, resume, reset, isRunning } = useTimer();
@@ -46,18 +52,23 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
 
   // Handle timer state based on game state
   useEffect(() => {
-    if (settings.timer) {
-      if (isPaused || isGameCompleted) {
-        pause();
-      } else {
-        if (!isRunning) {
-          start();
-        } else {
-          resume();
-        }
-      }
+    if (!settings.timer) {
+      pause();
+      return;
     }
-  }, [isPaused, isGameCompleted, settings.timer, isRunning]);
+
+    if (isGameCompleted) {
+      pause();
+      return;
+    }
+
+    if (isPaused) {
+      pause();
+    } else if (!isRunning) {
+      start();
+    }
+  }, [settings.timer, isGameCompleted, isPaused, isRunning, start, pause]);
+
   const [selectedCell, setSelectedCell] = useState<[number, number] | null>(
     null
   );
@@ -74,52 +85,15 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   const [score, setScore] = useState<number>(0);
   const [previousScore, setPreviousScore] = useState<number>(0);
   const [correctStreak, setCorrectStreak] = useState(0);
-  // const {
-  //   timer: time,
-  //   start: startTimer,
-  //   pause: pauseTimer,
-  //   resume: resumeTimer,
-  //   reset: resetTimer,
-  // } = usePauseTimer({
-  //   initialTime: 0,
-  //   autoStart: settings.timer,
-  // });
   const scoreManager = useRef(new ScoreManager(GameType.SUDOKU, difficulty));
   const [isPausing, setIsPausing] = useState(false);
 
-  // Handle timer pause/resume based on game state
-  useEffect(() => {
-    if (!settings.timer || isGameCompleted) {
-      pause();
-      return;
-    }
-
-    if (isPaused) {
-      setIsPausing(true);
-      pause();
-    } else if (isPausing) {
-      setIsPausing(false);
-      resume();
-    } else if (!timer) {
-      start();
-    }
-  }, [
-    settings.timer,
-    isPaused,
-    isGameCompleted,
-    pause,
-    resume,
-    start,
-    timer,
-    isPausing,
-  ]);
-
   // Use settings to control mistake limit
   useEffect(() => {
-    if (settings.mistakeLimit && mistakes >= 3) {
+    if (settings.mistakeLimit && mistakes >= SUDOKU_MISTAKE_LIMIT) {
       Alert.alert(
         "Game Over",
-        "You have made 3 mistakes. Game over.",
+        `You have made ${SUDOKU_MISTAKE_LIMIT} mistakes. Game over.`,
         [{ text: "OK", onPress: () => onComplete() }],
         { cancelable: false }
       );
@@ -130,65 +104,6 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   // This is now handled directly in the handleNumberPress function
   // when a number is placed on the board
 
-  // Use settings to control autoComplete
-  useEffect(() => {
-    if (!settings.autoComplete) return;
-
-    if (isGameComplete(board)) {
-      onComplete();
-    }
-  }, [board, settings.autoComplete, onComplete]);
-
-  const calculateRemainingNumbers = (currentBoard: SudokuBoard) => {
-    const remaining = Array(9).fill(9);
-    for (let row = 0; row < 9; row++) {
-      for (let col = 0; col < 9; col++) {
-        const value = currentBoard[row][col].value;
-        if (value !== null) {
-          remaining[value - 1]--;
-        }
-      }
-    }
-    return remaining;
-  };
-
-  const getValidNumbersForNotes = (
-    currentBoard: SudokuBoard,
-    row: number,
-    col: number
-  ): boolean[] => {
-    const validNumbers = Array(9).fill(true);
-
-    // Check row
-    for (let c = 0; c < 9; c++) {
-      const value = currentBoard[row][c].value;
-      if (value !== null) {
-        validNumbers[value - 1] = false;
-      }
-    }
-
-    // Check column
-    for (let r = 0; r < 9; r++) {
-      const value = currentBoard[r][col].value;
-      if (value !== null) {
-        validNumbers[value - 1] = false;
-      }
-    }
-
-    // Check 3x3 grid
-    const gridRow = Math.floor(row / 3) * 3;
-    const gridCol = Math.floor(col / 3) * 3;
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        const value = currentBoard[gridRow + r][gridCol + c].value;
-        if (value !== null) {
-          validNumbers[value - 1] = false;
-        }
-      }
-    }
-
-    return validNumbers;
-  };
   // Initialize the game when difficulty changes
   useEffect(() => {
     const newBoard = generateSudoku(difficulty);
@@ -244,32 +159,55 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     scoreManager.current.setDifficulty(difficulty);
   }, [difficulty]);
 
-  const removeRelatedNotes = (
-    currentBoard: SudokuBoard,
-    row: number,
-    col: number,
-    number: number
-  ) => {
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        const sameRow = r === row;
-        const sameCol = c === col;
-        const sameBlock =
-          Math.floor(r / 3) === Math.floor(row / 3) &&
-          Math.floor(c / 3) === Math.floor(col / 3);
-
-        if (
-          (sameRow || sameCol || sameBlock) &&
-          currentBoard[r][c].value === null
-        ) {
-          currentBoard[r][c] = {
-            ...currentBoard[r][c],
-            notes: [...currentBoard[r][c].notes],
-          };
-          currentBoard[r][c].notes[number - 1] = false;
+  const calculateRemainingNumbers = (currentBoard: SudokuBoard) => {
+    const remaining = Array(9).fill(9);
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        const value = currentBoard[row][col].value;
+        if (value !== null) {
+          remaining[value - 1]--;
         }
       }
     }
+    return remaining;
+  };
+
+  const getValidNumbersForNotes = (
+    currentBoard: SudokuBoard,
+    row: number,
+    col: number
+  ): boolean[] => {
+    const validNumbers = Array(9).fill(true);
+
+    // Check row
+    for (let c = 0; c < 9; c++) {
+      const value = currentBoard[row][c].value;
+      if (value !== null) {
+        validNumbers[value - 1] = false;
+      }
+    }
+
+    // Check column
+    for (let r = 0; r < 9; r++) {
+      const value = currentBoard[r][col].value;
+      if (value !== null) {
+        validNumbers[value - 1] = false;
+      }
+    }
+
+    // Check 3x3 grid
+    const gridRow = Math.floor(row / 3) * 3;
+    const gridCol = Math.floor(col / 3) * 3;
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const value = currentBoard[gridRow + r][gridCol + c].value;
+        if (value !== null) {
+          validNumbers[value - 1] = false;
+        }
+      }
+    }
+
+    return validNumbers;
   };
 
   // Function to place a number on the board
@@ -342,10 +280,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
         // Update streak and score
         updateStreak(true);
 
-        // Auto-remove notes if enabled
-        if (settings.autoRemoveNotes) {
-          removeRelatedNotes(newBoard, row, col, number);
-        }
+        // Auto-remove notes (always, since no setting)
+        removeRelatedNotes(newBoard, row, col, number);
       }
     }
 
@@ -615,7 +551,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     setCorrectStreak(0); // Reset streak when using a hint
 
     if (settings.audioEffect) {
-      playSound("hint");
+      playSound("move");
     }
 
     if (settings.vibration) {
@@ -638,6 +574,34 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
       }
     } else {
       setCorrectStreak(0); // Reset streak on mistake
+    }
+  };
+
+  const removeRelatedNotes = (
+    currentBoard: SudokuBoard,
+    row: number,
+    col: number,
+    number: number
+  ) => {
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const sameRow = r === row;
+        const sameCol = c === col;
+        const sameBlock =
+          Math.floor(r / 3) === Math.floor(row / 3) &&
+          Math.floor(c / 3) === Math.floor(col / 3);
+
+        if (
+          (sameRow || sameCol || sameBlock) &&
+          currentBoard[r][c].value === null
+        ) {
+          currentBoard[r][c] = {
+            ...currentBoard[r][c],
+            notes: [...currentBoard[r][c].notes],
+          };
+          currentBoard[r][c].notes[number - 1] = false;
+        }
+      }
     }
   };
 
@@ -690,6 +654,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
         previousScore={previousScore}
         settings={settings}
         isPaused={isPaused}
+        gameType={GameType.SUDOKU}
       />
       <View style={isLandscape ? styles.landscapeBoard : styles.board}>
         <SudokuBoardComponent

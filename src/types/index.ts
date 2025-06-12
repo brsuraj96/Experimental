@@ -1,25 +1,126 @@
+import { Language, FontSize } from "./settings";
+
 // Game Types
 export enum GameType {
   SUDOKU = "Sudoku",
   SLIDE_TILES = "Slide Tiles",
   FLOW_FREE = "Flow Free",
-  CROSSWORD = "Crossword",
   WORDSEARCH = "Word Search",
-  JIGSAW = "Jigsaw",
-  MATCHSTICK = "Matchstick",
-  SPOT_DIFFERENCE = "Spot the Difference",
+  CROSSWORD = "Crossword",
   WATER_FLOW = "Water Flow",
+  MATCHSTICK = "Matchstick",
+  SPOT_DIFFERENCE = "Spot Difference",
   TRIVIA = "Trivia",
   RIDDLES = "Riddles",
 }
 
 export enum Difficulty {
-  BEGINNER = "Beginner",
-  EASY = "Easy",
-  MEDIUM = "Medium",
-  HARD = "Hard",
-  EXPERT = "Expert",
+  BEGINNER = "BEGINNER",
+  EASY = "EASY",
+  MEDIUM = "MEDIUM",
+  HARD = "HARD",
+  EXPERT = "EXPERT",
 }
+
+export type Orientation = "landscape" | "portrait";
+
+// Base settings that apply to all games
+export interface BaseSettings {
+  audioEffect: boolean;
+  vibration: boolean;
+  darkMode: boolean;
+  fontSize: FontSize;
+  language: Language;
+}
+
+// Game-specific settings
+export interface SudokuSettings extends BaseSettings {
+  timer: boolean;
+  smartHint: boolean;
+  showProgress: boolean;
+  mistakeLimit: boolean;
+  numberFirst: boolean;
+  highlightPeer: boolean;
+  highlightSameNumbers: boolean;
+  autoRemoveNotes: boolean;
+  remainingNumbers: boolean;
+  showScore: boolean;
+}
+
+export interface SlideTilesSettings extends BaseSettings {
+  showTimer: boolean;
+  showMoves: boolean;
+  smartHint: boolean;
+  showProgress: boolean;
+}
+
+export interface ExtendedSlideTilesSettings extends BaseSettings {
+  timer: boolean;
+  completionRate: boolean;
+  lightningMode: boolean;
+  showScore: boolean;
+}
+
+export interface FlowFreeSettings extends BaseSettings {
+  showTimer: boolean;
+  showMoves: boolean;
+  smartHint: boolean;
+  showProgress: boolean;
+  allowUndo: boolean;
+  allowRedo: boolean;
+}
+
+export interface WordSearchSettings extends BaseSettings {
+  showTimer: boolean;
+  smartHint: boolean;
+  showProgress: boolean;
+  allowUndo: boolean;
+  allowRedo: boolean;
+}
+
+export interface CrosswordSettings extends BaseSettings {
+  showTimer: boolean;
+  smartHint: boolean;
+  showProgress: boolean;
+  allowUndo: boolean;
+  allowRedo: boolean;
+}
+
+export interface WaterFlowSettings extends BaseSettings {
+  showTimer: boolean;
+  showMoves: boolean;
+  smartHint: boolean;
+  showProgress: boolean;
+  allowUndo: boolean;
+  allowRedo: boolean;
+}
+
+export interface MatchstickSettings extends BaseSettings {
+  showTimer: boolean;
+  smartHint: boolean;
+  showProgress: boolean;
+  allowUndo: boolean;
+  allowRedo: boolean;
+}
+
+export interface SpotDifferenceSettings extends BaseSettings {
+  showTimer: boolean;
+  smartHint: boolean;
+  showProgress: boolean;
+  allowUndo: boolean;
+  allowRedo: boolean;
+}
+
+export type Settings =
+  | BaseSettings
+  | SudokuSettings
+  | SlideTilesSettings
+  | FlowFreeSettings
+  | WordSearchSettings
+  | CrosswordSettings
+  | WaterFlowSettings
+  | MatchstickSettings
+  | SpotDifferenceSettings;
 
 export interface GameInfo {
   id: GameType;
@@ -266,13 +367,6 @@ export interface GameProgress {
     [Difficulty.HARD]: number;
     [Difficulty.EXPERT]: number;
   };
-  [GameType.JIGSAW]: {
-    [Difficulty.BEGINNER]: number;
-    [Difficulty.EASY]: number;
-    [Difficulty.MEDIUM]: number;
-    [Difficulty.HARD]: number;
-    [Difficulty.EXPERT]: number;
-  };
   [GameType.TRIVIA]: {
     [Difficulty.BEGINNER]: number;
     [Difficulty.EASY]: number;
@@ -292,18 +386,85 @@ export interface GameProgress {
 // Navigation Types
 export type RootStackParamList = {
   Home: undefined;
-  Game: { gameType: GameType; difficulty: Difficulty };
+  Game: {
+    gameType: GameType;
+    difficulty: Difficulty;
+  };
+  Settings: undefined;
   Completion: {
     gameType: GameType;
     difficulty: Difficulty;
     time: number;
     moves: number;
   };
-  Settings: undefined;
   Premium: undefined;
   Statistics: undefined;
   HowToPlay: undefined;
   HelpCenter: undefined;
   About: undefined;
   Language: undefined;
+};
+
+// Game component props interfaces
+export interface BaseGameProps {
+  difficulty: Difficulty;
+  onMove: () => void;
+  onComplete: () => void;
+  orientation: Orientation;
+  settings: Settings;
+  isGameCompleted: boolean;
+  isPaused: boolean;
+}
+
+export interface SudokuGameProps extends BaseGameProps {
+  settings: SudokuSettings;
+  onDifficultyChange: (difficulty: Difficulty) => void;
+}
+
+export interface SlideTilesGameProps extends BaseGameProps {
+  settings: SlideTilesSettings & ExtendedSlideTilesSettings;
+  onDifficultyChange: (difficulty: Difficulty) => void;
+}
+
+export interface FlowFreeGameProps extends BaseGameProps {
+  settings: FlowFreeSettings;
+  onDifficultyChange: (difficulty: Difficulty) => void;
+}
+
+export interface WordSearchGameProps extends BaseGameProps {
+  settings: WordSearchSettings;
+  onDifficultyChange: (difficulty: Difficulty) => void;
+}
+
+export interface CrosswordGameProps extends BaseGameProps {
+  settings: CrosswordSettings;
+  onDifficultyChange: (difficulty: Difficulty) => void;
+}
+
+export interface WaterFlowGameProps extends BaseGameProps {
+  settings: WaterFlowSettings;
+  onDifficultyChange: (difficulty: Difficulty) => void;
+}
+
+export interface MatchstickGameProps extends BaseGameProps {
+  settings: MatchstickSettings;
+  onDifficultyChange: (difficulty: Difficulty) => void;
+}
+
+export interface SpotDifferenceGameProps extends BaseGameProps {
+  settings: SpotDifferenceSettings;
+  onDifficultyChange: (difficulty: Difficulty) => void;
+}
+
+export type GameSettingsType = {
+  [GameType.SUDOKU]: SudokuSettings;
+  [GameType.SLIDE_TILES]: SlideTilesSettings;
+  [GameType.FLOW_FREE]: FlowFreeSettings;
+  [GameType.WORDSEARCH]: WordSearchSettings;
+  [GameType.CROSSWORD]: CrosswordSettings;
+  [GameType.WATER_FLOW]: WaterFlowSettings;
+  [GameType.MATCHSTICK]: MatchstickSettings;
+  [GameType.SPOT_DIFFERENCE]: SpotDifferenceSettings;
+  [GameType.TRIVIA]: BaseSettings;
+  [GameType.RIDDLES]: BaseSettings;
 };

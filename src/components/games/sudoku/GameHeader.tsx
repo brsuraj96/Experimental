@@ -5,10 +5,20 @@ import { Difficulty } from "../../../types";
 import Timer from "../../common/Timer";
 import CustomDropdown from "../../common/CustomDropdown";
 import { useTheme } from "../../../context/ThemeContext";
-import { Settings } from "../../../context/SettingsContext";
-import useSound from "../../../hooks/useSound";
+import { SudokuSettings } from "../../../types/settings";
+import { useSound, SoundType } from "../../../hooks/useSound";
 import ScorePopup from "../../common/ScorePopup";
 import ScoreDisplay from "../sudoku/ScoreDisplay";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "../../../types";
+import { GameType } from "../../../types";
+
+// Define DropdownOption locally since it's not exported from CustomDropdown
+interface DropdownOption<T> {
+  label: string;
+  value: T;
+}
 
 interface GameHeaderProps {
   mistakes: number;
@@ -19,8 +29,9 @@ interface GameHeaderProps {
   onDifficultyChange?: (difficulty: Difficulty) => void;
   score: number;
   previousScore: number;
-  settings: Settings;
+  settings: SudokuSettings;
   isPaused?: boolean;
+  gameType: GameType;
 }
 
 const GameHeader: React.FC<GameHeaderProps> = ({
@@ -34,6 +45,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   previousScore,
   settings,
   isPaused = false,
+  gameType,
 }) => {
   const { currentTheme } = useTheme();
   const { playSound } = useSound();
@@ -44,6 +56,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   >([]);
   const popupIdCounter = useRef(0);
   const scoreContainerRef = useRef<View>(null);
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   // Animate score changes
   useEffect(() => {
@@ -66,9 +79,9 @@ const GameHeader: React.FC<GameHeaderProps> = ({
         const scoreDiff = score - (previousScore || 0);
         // Play different sounds for different types of score increases
         if (scoreDiff >= 100) {
-          playSound("bonus");
+          playSound("win" as SoundType);
         } else {
-          playSound("scoreUp");
+          playSound("move" as SoundType);
         }
       }
 
@@ -123,16 +136,22 @@ const GameHeader: React.FC<GameHeaderProps> = ({
     Difficulty.EXPERT,
   ];
 
-  const handleDifficultyChange = (newDifficulty: Difficulty) => {
-    if (onDifficultyChange) {
-      onDifficultyChange(newDifficulty);
-    }
-  };
+  const handleDifficultyChange = useCallback(
+    (newDifficulty: Difficulty) => {
+      navigation.replace("Game", {
+        gameType,
+        difficulty: newDifficulty,
+      });
+    },
+    [navigation, gameType]
+  );
 
-  const difficultyOptions = difficulties.map((diff) => ({
-    value: diff,
-    label: diff,
-  }));
+  const difficultyOptions: DropdownOption<Difficulty>[] = difficulties.map(
+    (diff) => ({
+      label: diff,
+      value: diff,
+    })
+  );
 
   return (
     <View style={[styles.container, { padding: currentTheme.spacing.small }]}>
@@ -178,11 +197,9 @@ const GameHeader: React.FC<GameHeaderProps> = ({
           {showDifficultySelector ? (
             <View style={styles.dropdownContainer}>
               <CustomDropdown
-                data={difficultyOptions}
-                onChange={({ value }) =>
-                  handleDifficultyChange(value as Difficulty)
-                }
-                placeholder={difficulty}
+                value={difficulty}
+                options={difficultyOptions}
+                onValueChange={onDifficultyChange ?? (() => {})}
               />
             </View>
           ) : (
@@ -202,11 +219,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
               },
             ]}
           >
-            <Timer
-              initialTime={time}
-              isRunning={!isGameCompleted}
-              isPaused={isPaused}
-            />
+            <Timer isPaused={isPaused} />
           </View>
         )}
       </View>
@@ -223,7 +236,7 @@ const styles = StyleSheet.create({
   },
   statRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
     alignItems: "center",
     flexWrap: "wrap",
     width: "100%",

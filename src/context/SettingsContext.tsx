@@ -1,63 +1,190 @@
-import React, { createContext, useContext, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
+import { BaseSettings, GameType, GameSettingsType } from "../types";
+import {
+  SudokuSettings,
+  SlideTilesSettings,
+  FlowFreeSettings,
+  WordSearchSettings,
+  CrosswordSettings,
+  WaterFlowSettings,
+  MatchstickSettings,
+  SpotDifferenceSettings,
+  Language,
+  FontSize,
+} from "../types/settings";
 
-export interface Settings {
-  timer: boolean;
-  mistakeLimit: boolean;
-  numberFirst: boolean;
-  highlightPeer: boolean;
-  highlightSameNumbers: boolean;
-  autoRemoveNotes: boolean;
-  autoComplete: boolean;
-  completionRate: boolean;
-  showScore: boolean;
-  tournament: boolean;
-  animatedScoring: boolean;
-  lightningMode: boolean;
-  remainingNumbers: boolean;
-  smartHint: boolean;
-  darkMode: boolean;
-  audioEffect: boolean;
-  vibration: boolean;
-  notification: boolean;
-}
+// Default settings for each game type
+const defaultBaseSettings: BaseSettings = {
+  audioEffect: true,
+  vibration: true,
+  darkMode: false,
+  fontSize: "medium" as FontSize,
+  language: "en" as Language,
+};
+
+export const defaultSudokuSettings: SudokuSettings = {
+  ...defaultBaseSettings,
+  timer: true,
+  smartHint: true,
+  showProgress: true,
+  mistakeLimit: false,
+  numberFirst: false,
+  highlightPeer: true,
+  highlightSameNumbers: true,
+  autoRemoveNotes: true,
+  remainingNumbers: true,
+  showScore: true,
+};
+
+const defaultGameSettings = {
+  timer: true,
+  smartHint: true,
+  showProgress: true,
+};
+
+const defaultSlideTilesSettings: SlideTilesSettings = {
+  ...defaultBaseSettings,
+  ...defaultGameSettings,
+  showMoves: true,
+};
+
+const defaultFlowFreeSettings: FlowFreeSettings = {
+  ...defaultBaseSettings,
+  ...defaultGameSettings,
+  showMoves: true,
+};
+
+const defaultWordSearchSettings: WordSearchSettings = {
+  ...defaultBaseSettings,
+  ...defaultGameSettings,
+};
+
+const defaultCrosswordSettings: CrosswordSettings = {
+  ...defaultBaseSettings,
+  ...defaultGameSettings,
+};
+
+const defaultWaterFlowSettings: WaterFlowSettings = {
+  ...defaultBaseSettings,
+  ...defaultGameSettings,
+  showMoves: true,
+};
+
+const defaultMatchstickSettings: MatchstickSettings = {
+  ...defaultBaseSettings,
+  ...defaultGameSettings,
+};
+
+const defaultSpotDifferenceSettings: SpotDifferenceSettings = {
+  ...defaultBaseSettings,
+  ...defaultGameSettings,
+};
+
+const defaultTriviaSettings: BaseSettings = {
+  ...defaultBaseSettings,
+};
+
+const defaultRiddlesSettings: BaseSettings = {
+  ...defaultBaseSettings,
+};
 
 interface SettingsContextType {
-  settings: Settings;
-  updateSetting: (key: keyof Settings, value: boolean) => void;
+  baseSettings: BaseSettings;
+  gameSettings: {
+    [GameType.SUDOKU]: SudokuSettings;
+    [GameType.SLIDE_TILES]: SlideTilesSettings;
+    [GameType.FLOW_FREE]: FlowFreeSettings;
+    [GameType.WORDSEARCH]: WordSearchSettings;
+    [GameType.CROSSWORD]: CrosswordSettings;
+    [GameType.WATER_FLOW]: WaterFlowSettings;
+    [GameType.MATCHSTICK]: MatchstickSettings;
+    [GameType.SPOT_DIFFERENCE]: SpotDifferenceSettings;
+    [GameType.TRIVIA]: BaseSettings;
+    [GameType.RIDDLES]: BaseSettings;
+  };
+  currentGameType: GameType;
+  updateBaseSettings: (settings: Partial<BaseSettings>) => void;
+  updateGameSettings: <T extends GameType>(
+    gameType: T,
+    settings: Partial<GameSettingsType[T]>
+  ) => void;
+  setCurrentGameType: (gameType: GameType) => void;
 }
 
-const SettingsContext = createContext<SettingsContextType | null>(null);
+const SettingsContext = createContext<SettingsContextType | undefined>(
+  undefined
+);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [settings, setSettings] = useState<Settings>({
-    timer: true,
-    mistakeLimit: true,
-    numberFirst: false,
-    highlightPeer: true,
-    highlightSameNumbers: true,
-    autoRemoveNotes: true,
-    autoComplete: false,
-    completionRate: true,
-    showScore: true,
-    tournament: false,
-    animatedScoring: true,
-    lightningMode: false,
-    remainingNumbers: true,
-    smartHint: true,
-    darkMode: false,
-    audioEffect: true,
-    vibration: true,
-    notification: true,
+  const [baseSettings, setBaseSettings] =
+    useState<BaseSettings>(defaultBaseSettings);
+  const [currentGameType, setCurrentGameType] = useState<GameType>(
+    GameType.SUDOKU
+  );
+  const [gameSettings, setGameSettings] = useState({
+    [GameType.SUDOKU]: defaultSudokuSettings,
+    [GameType.SLIDE_TILES]: defaultSlideTilesSettings,
+    [GameType.FLOW_FREE]: defaultFlowFreeSettings,
+    [GameType.WORDSEARCH]: defaultWordSearchSettings,
+    [GameType.CROSSWORD]: defaultCrosswordSettings,
+    [GameType.WATER_FLOW]: defaultWaterFlowSettings,
+    [GameType.MATCHSTICK]: defaultMatchstickSettings,
+    [GameType.SPOT_DIFFERENCE]: defaultSpotDifferenceSettings,
+    [GameType.TRIVIA]: defaultTriviaSettings,
+    [GameType.RIDDLES]: defaultRiddlesSettings,
   });
 
-  const updateSetting = (key: keyof Settings, value: boolean) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-  };
+  const updateBaseSettings = useCallback(
+    (newSettings: Partial<BaseSettings>) => {
+      setBaseSettings((prev) => ({ ...prev, ...newSettings }));
+    },
+    []
+  );
+
+  const updateGameSettings = useCallback(
+    <T extends GameType>(
+      gameType: T,
+      newSettings: Partial<GameSettingsType[T]>
+    ) => {
+      setGameSettings((prev) => ({
+        ...prev,
+        [gameType]: {
+          ...prev[gameType],
+          ...newSettings,
+        },
+      }));
+    },
+    []
+  );
+
+  const value = useMemo(
+    () => ({
+      baseSettings,
+      gameSettings,
+      currentGameType,
+      updateBaseSettings,
+      updateGameSettings,
+      setCurrentGameType,
+    }),
+    [
+      baseSettings,
+      gameSettings,
+      currentGameType,
+      updateBaseSettings,
+      updateGameSettings,
+    ]
+  );
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSetting }}>
+    <SettingsContext.Provider value={value}>
       {children}
     </SettingsContext.Provider>
   );
@@ -65,8 +192,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useSettings = () => {
   const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error("useSettings must be used within SettingsProvider");
+  if (context === undefined) {
+    throw new Error("useSettings must be used within a SettingsProvider");
   }
   return context;
 };

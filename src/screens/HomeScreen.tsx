@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Platform,
   useWindowDimensions,
+  BackHandler,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -16,6 +17,7 @@ import { RootStackParamList, GameType, Difficulty, GameInfo } from "../types";
 // } from "react-native-reanimated";
 import { theme } from "../styles/theme";
 import { useTheme } from "../context/ThemeContext";
+import Dialog from "../components/common/Dialog";
 import GameCard from "../components/common/GameCard";
 import RealtimeActivities from "../components/common/RealtimeActivities";
 import useOrientation from "../hooks/useOrientation";
@@ -32,6 +34,38 @@ import IconRiddles from "../assets/icons/IconRiddles";
 
 type GameNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
+// Memoize GameCard component
+const MemoizedGameCard = memo(GameCard);
+
+// Function to get the appropriate icon component
+const getGameIcon = (gameType: GameType, size: number) => {
+  switch (gameType) {
+    case GameType.SUDOKU:
+      return <IconSudoku size={size} />;
+    case GameType.SLIDE_TILES:
+      return <IconSlideTiles size={size} />;
+    case GameType.FLOW_FREE:
+      return <IconFlowFree size={size} />;
+    case GameType.CROSSWORD:
+      return <IconCrossword size={size} />;
+    case GameType.MATCHSTICK:
+      return <IconMatchstick size={size} />;
+    case GameType.SPOT_DIFFERENCE:
+      return <IconSpotDifference size={size} />;
+    case GameType.WATER_FLOW:
+      return <IconWaterFlow size={size} />;
+    case GameType.TRIVIA:
+      return <IconTrivia size={size} />;
+    case GameType.RIDDLES:
+      return <IconRiddles size={size} />;
+    case GameType.WORDSEARCH:
+      return <IconSudoku size={size} />; // Placeholder icon
+    default:
+      return <IconSudoku size={size} />;
+  }
+};
+
+// Memoize games array to prevent recreation
 const games: GameInfo[] = [
   {
     id: GameType.SUDOKU,
@@ -67,13 +101,6 @@ const games: GameInfo[] = [
     description: "Find hidden words",
     color: theme.colors.primaryLight,
     implemented: true,
-  },
-  {
-    id: GameType.JIGSAW,
-    title: "Jigsaw",
-    description: "Piece together the image",
-    color: theme.colors.accent,
-    implemented: false,
   },
   {
     id: GameType.MATCHSTICK,
@@ -112,98 +139,114 @@ const games: GameInfo[] = [
   },
 ];
 
-const getGameIcon = (gameType: GameType) => {
-  switch (gameType) {
-    case GameType.SUDOKU:
-      return <IconSudoku size={50} />;
-    case GameType.SLIDE_TILES:
-      return <IconSlideTiles size={50} />;
-    case GameType.FLOW_FREE:
-      return <IconFlowFree size={50} />;
-    case GameType.CROSSWORD:
-      return <IconCrossword size={50} />;
-    case GameType.JIGSAW:
-      return <IconJigsaw size={50} />;
-    case GameType.MATCHSTICK:
-      return <IconMatchstick size={50} />;
-    case GameType.SPOT_DIFFERENCE:
-      return <IconSpotDifference size={50} />;
-    case GameType.WATER_FLOW:
-      return <IconWaterFlow size={50} />;
-    case GameType.TRIVIA:
-      return <IconTrivia size={50} />;
-    case GameType.RIDDLES:
-      return <IconRiddles size={50} />;
-    default:
-      return <IconSudoku size={50} />;
-  }
-};
-
 const HomeScreen = () => {
   const navigation = useNavigation<GameNavigationProp>();
   const orientation = useOrientation();
   const { width } = useWindowDimensions();
   const { currentTheme } = useTheme();
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
 
-  // const { transitionProgress } = useTheme();
-
-  // const animatedBackground = useAnimatedStyle(() => {
-  //   const backgroundColor = interpolateColor(
-  //     transitionProgress.value,
-  //     [0, 1, 2], // default, dark, soft
-  //     [
-  //       theme.colors.defaultTheme,
-  //       theme.colors.darkTheme,
-  //       theme.colors.softTheme,
-  //     ]
-  //   );
-  //   return { backgroundColor };
-  // });
-
-  const handleSelectGame = (game: GameInfo) => {
-    if (game.implemented) {
-      navigation.navigate("Game", {
-        gameType: game.id,
-        difficulty: Difficulty.EASY,
-      });
+  const quitApp = useCallback(() => {
+    if (Platform.OS === "android") {
+      BackHandler.exitApp();
     }
-  };
+  }, []);
+
+  const handleQuit = useCallback(() => {
+    setShowQuitDialog(false);
+    setTimeout(() => {
+      quitApp();
+    }, 300);
+  }, [quitApp]);
+
+  const handleSelectGame = useCallback(
+    (game: GameInfo) => {
+      if (game.implemented) {
+        navigation.navigate("Game", {
+          gameType: game.id,
+          difficulty: Difficulty.EASY,
+        });
+      }
+    },
+    [navigation]
+  );
+
+  // Handle back button
+  useEffect(() => {
+    const backAction = () => {
+      setShowQuitDialog(true);
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   const numColumns = orientation === "landscape" ? 3 : 2;
   const cardWidth =
     (width - theme.spacing.large * (numColumns + 1)) / numColumns;
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: currentTheme.colors.background,
-    },
-    header: {
-      paddingTop: theme.spacing.large,
-      paddingBottom: theme.spacing.medium,
-      paddingHorizontal: theme.spacing.large,
-      backgroundColor: currentTheme.colors.backgroundDark,
-    },
-    title: {
-      fontSize: 30,
-      fontWeight: "bold",
-      color: currentTheme.colors.text,
-      marginBottom: theme.spacing.small,
-    },
-    subtitle: {
-      fontSize: 16,
-      color: currentTheme.colors.textSecondary,
-    },
-    scrollContent: {
-      flexGrow: 1,
-      paddingVertical: theme.spacing.medium,
-    },
-    gamesGrid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      justifyContent: "space-between",
-    },
-  });
+  // Memoize styles to prevent recreation
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: currentTheme.colors.background,
+        },
+        header: {
+          paddingTop: theme.spacing.large,
+          paddingBottom: theme.spacing.medium,
+          paddingHorizontal: theme.spacing.large,
+          backgroundColor: currentTheme.colors.backgroundDark,
+        },
+        title: {
+          fontSize: 30,
+          fontWeight: "bold",
+          color: currentTheme.colors.text,
+          marginBottom: theme.spacing.small,
+        },
+        subtitle: {
+          fontSize: 16,
+          color: currentTheme.colors.textSecondary,
+        },
+        scrollContent: {
+          flexGrow: 1,
+          paddingVertical: theme.spacing.medium,
+        },
+        gamesGrid: {
+          flexDirection: "row",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+        },
+      }),
+    [currentTheme.colors]
+  );
+
+  // Memoize game cards rendering
+  const renderGameCards = useCallback(
+    () => (
+      <View style={styles.gamesGrid}>
+        {games.map((game) => (
+          <MemoizedGameCard
+            key={game.id}
+            title={game.title}
+            description={game.description}
+            color={game.color}
+            icon={getGameIcon(game.id, 50)}
+            width={cardWidth}
+            onPress={() => handleSelectGame(game)}
+            implemented={game.implemented}
+          />
+        ))}
+      </View>
+    ),
+    [cardWidth, handleSelectGame, styles.gamesGrid]
+  );
 
   return (
     // <Animated.View style={[styles.container, animatedBackground]}>
@@ -224,24 +267,30 @@ const HomeScreen = () => {
         {/* Show real-time activities for web platform only */}
         {Platform.OS === "web" && <RealtimeActivities />}
 
-        <View style={styles.gamesGrid}>
-          {games.map((game) => (
-            <GameCard
-              key={game.id}
-              title={game.title}
-              description={game.description}
-              color={game.color}
-              icon={getGameIcon(game.id)}
-              width={cardWidth}
-              onPress={() => handleSelectGame(game)}
-              implemented={game.implemented}
-            />
-          ))}
-        </View>
+        {renderGameCards()}
       </ScrollView>
+
+      <Dialog
+        visible={showQuitDialog}
+        title="Quit Application"
+        message="Are you sure you want to quit the application?"
+        buttons={[
+          {
+            text: "Cancel",
+            onPress: () => setShowQuitDialog(false),
+            style: "cancel",
+          },
+          {
+            text: "Quit",
+            onPress: handleQuit,
+            style: "destructive",
+          },
+        ]}
+        onDismiss={() => setShowQuitDialog(false)}
+      />
     </View>
     // </Animated.View>
   );
 };
 
-export default HomeScreen;
+export default memo(HomeScreen);

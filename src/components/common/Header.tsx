@@ -8,18 +8,23 @@ import {
   ViewStyle,
   TouchableWithoutFeedback,
 } from "react-native";
-import { Difficulty } from "../../types";
+import { Difficulty, GameType } from "../../types";
 import { Picker } from "@react-native-picker/picker";
 import ThemeSelector from "./ThemeSelector";
 import { useTheme } from "../../context/ThemeContext";
-import { Settings } from "../../context/SettingsContext";
+import { BaseSettings } from "../../types/settings";
 import Timer from "./Timer";
 import { useTimer } from "../../context/TimerContext";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
 
-interface HeaderProps {
+// Define a type that extends BaseSettings and includes timer
+type SettingsWithTimer = BaseSettings & {
+  timer: boolean;
+};
+
+interface HeaderProps<T extends SettingsWithTimer> {
   title: string;
   subtitle?: string;
   showBackButton?: boolean;
@@ -28,12 +33,12 @@ interface HeaderProps {
   onHint?: () => void;
   onUndo?: () => void;
   onReset?: () => void;
-  isTimer?: () => void;
+  isTimer?: boolean;
   containerStyle?: ViewStyle;
   onDifficultyChange?: (difficulty: Difficulty) => void;
   showDifficultySelector?: boolean;
   isThemeSelectorVisible?: boolean;
-  settings: Settings;
+  settings: T;
   isGameCompleted: boolean;
   onPause?: () => void;
   onResume?: () => void;
@@ -47,7 +52,7 @@ const difficulties: Difficulty[] = [
   Difficulty.HARD,
 ];
 
-const Header: React.FC<HeaderProps> = ({
+const Header = <T extends SettingsWithTimer>({
   title,
   subtitle,
   showBackButton = false,
@@ -67,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({
   onResume,
   isPaused = false,
   navigation: navigationProp,
-}) => {
+}: HeaderProps<T>) => {
   const { currentTheme } = useTheme();
   const navigation =
     navigationProp || useNavigation<NavigationProp<RootStackParamList>>();
@@ -327,6 +332,11 @@ const Header: React.FC<HeaderProps> = ({
       shadowOpacity: 0.25,
       shadowRadius: 3.84,
     },
+    timerContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
   });
 
   return (
@@ -352,19 +362,9 @@ const Header: React.FC<HeaderProps> = ({
           </View>
         </View>
         <View>
-          {isTimer && settings?.timer && isGameCompleted !== undefined && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              <Timer
-                initialTime={timer}
-                isRunning={!isGameCompleted}
-                isPaused={isPaused}
-              />
+          {isTimer && settings.timer && (
+            <View style={styles.timerContainer}>
+              <Timer isPaused={isPaused} />
             </View>
           )}
         </View>

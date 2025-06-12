@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, memo } from "react";
 import { SafeAreaView, StatusBar, StyleSheet, Platform } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import AppNavigator from "./src/navigation/AppNavigator";
@@ -8,10 +8,12 @@ import { WebSocketProvider } from "./src/context/WebSocketContext";
 import { Provider as PaperProvider } from "react-native-paper";
 import { SettingsProvider } from "./src/context/SettingsContext";
 import { TimerProvider } from "./src/context/TimerContext";
-import "setimmediate";
 
-// Separate component for the theme-aware content
-const ThemedApp = () => {
+// Move setimmediate polyfill to a separate initialization file
+import "./src/utils/polyfills";
+
+// Memoize ThemedApp component to prevent unnecessary re-renders
+const ThemedApp = memo(() => {
   const { currentTheme } = useTheme();
 
   useEffect(() => {
@@ -34,26 +36,29 @@ const ThemedApp = () => {
       <AppNavigator />
     </SafeAreaView>
   );
-};
+});
+
+ThemedApp.displayName = "ThemedApp";
+
+// Move AppContent outside to prevent recreation on each render
+const AppContent = () => (
+  <TimerProvider initialTime={0} autoStart={true}>
+    <SettingsProvider>
+      <ThemeProvider>
+        <PaperProvider>
+          <GameProvider>
+            <NavigationContainer>
+              <ThemedApp />
+            </NavigationContainer>
+          </GameProvider>
+        </PaperProvider>
+      </ThemeProvider>
+    </SettingsProvider>
+  </TimerProvider>
+);
 
 // Main app structure with proper provider nesting
 const App = () => {
-  const AppContent = () => (
-    <TimerProvider initialTime={0} autoStart={false}>
-      <SettingsProvider>
-        <ThemeProvider>
-          <PaperProvider>
-            <GameProvider>
-              <NavigationContainer>
-                <ThemedApp />
-              </NavigationContainer>
-            </GameProvider>
-          </PaperProvider>
-        </ThemeProvider>
-      </SettingsProvider>
-    </TimerProvider>
-  );
-
   // Add WebSocketProvider for web platform only
   if (Platform.OS === "web") {
     return (
