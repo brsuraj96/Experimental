@@ -3,13 +3,13 @@ import { View, StyleSheet, useWindowDimensions } from "react-native";
 import { SudokuBoard as SudokuBoardType } from "../../../types";
 import SudokuCell from "./SudokuCell";
 import { useTheme } from "../../../context/ThemeContext";
-import { Settings } from "../../../context/SettingsContext";
+import { SudokuSettings } from "../../../types/settings";
 
 interface SudokuBoardProps {
   board: SudokuBoardType;
   selectedCell: [number, number] | null;
   onCellPress: (row: number, col: number) => void;
-  settings: Settings;
+  settings: SudokuSettings;
   lockedNumber: number | null;
 }
 
