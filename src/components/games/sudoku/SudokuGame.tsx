@@ -29,6 +29,8 @@ interface SudokuGameProps {
   onDifficultyChange: (difficulty: Difficulty) => void;
   settings: SudokuSettings;
   isPaused?: boolean;
+  onPause?: () => void;
+  onResume?: () => void;
 }
 
 const SUDOKU_MISTAKE_LIMIT = 3;
@@ -42,6 +44,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   onDifficultyChange,
   settings,
   isPaused = false,
+  onPause,
+  onResume,
 }): React.ReactElement => {
   const { currentTheme } = useTheme();
   const { playSound } = useSound();
@@ -655,6 +659,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
         settings={settings}
         isPaused={isPaused}
         gameType={GameType.SUDOKU}
+        onPause={onPause}
+        onResume={onResume}
       />
       <View style={isLandscape ? styles.landscapeBoard : styles.board}>
         <SudokuBoardComponent

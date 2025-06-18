@@ -19,13 +19,13 @@ import {
 import { theme } from "../../../styles/theme";
 import { useSound } from "../../../hooks/useSound";
 import { SlideTilesSettings } from "../../../types/settings";
+import { useTheme } from "../../../context/ThemeContext";
 
 // Extend SlideTilesSettings with additional properties needed for this component
 interface ExtendedSlideTilesSettings extends SlideTilesSettings {
-  timer: boolean;
+  showScore: boolean;
   completionRate: boolean;
   lightningMode: boolean;
-  showScore: boolean;
 }
 
 interface SlideTilesGameProps {
@@ -34,6 +34,7 @@ interface SlideTilesGameProps {
   onComplete: () => void;
   orientation: "portrait" | "landscape";
   settings: ExtendedSlideTilesSettings;
+  isPaused?: boolean;
 }
 
 const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
@@ -42,8 +43,10 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
   onComplete,
   orientation,
   settings,
-}) => {
+  isPaused = false,
+}): React.ReactElement => {
   const { playSound } = useSound();
+  const { currentTheme } = useTheme();
   const boardSize = getBoardSize(difficulty);
   const [board, setBoard] = useState(() => generateBoard(boardSize));
   const [moves, setMoves] = useState(0);
@@ -52,11 +55,13 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Timer implementation based on settings
+  // Timer implementation based on settings and pause state
   useEffect(() => {
     const boardSolved = isSolved(board);
+    const shouldRunTimer =
+      settings.timer && gameStarted && !boardSolved && !isPaused;
 
-    if (settings.showTimer && gameStarted && !boardSolved) {
+    if (shouldRunTimer) {
       if (!timerRef.current) {
         timerRef.current = setInterval(() => {
           setTime((prev) => prev + 1);
@@ -73,7 +78,7 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
         timerRef.current = null;
       }
     };
-  }, [settings.showTimer, gameStarted, board]);
+  }, [settings.timer, gameStarted, board, isPaused]);
 
   // Initialize the game when difficulty changes
   useEffect(() => {
@@ -183,7 +188,12 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
   };
 
   return (
-    <View style={[styles.container, isLandscape && styles.landscapeContainer]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: currentTheme.colors.background },
+      ]}
+    >
       <View style={isLandscape ? styles.landscapeBoard : styles.boardContainer}>
         <SlideTilesBoard
           board={board}
@@ -199,21 +209,43 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
       >
         <View style={styles.infoContainer}>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Moves</Text>
-            <Text style={styles.infoValue}>{moves}</Text>
+            <Text
+              style={[styles.infoLabel, { color: currentTheme.colors.text }]}
+            >
+              Moves
+            </Text>
+            <Text
+              style={[styles.infoValue, { color: currentTheme.colors.text }]}
+            >
+              {moves}
+            </Text>
           </View>
 
-          {settings.showTimer && (
+          {settings.timer && (
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Time</Text>
-              <Text style={styles.infoValue}>{formatTime(time)}</Text>
+              <Text
+                style={[styles.infoLabel, { color: currentTheme.colors.text }]}
+              >
+                Time
+              </Text>
+              <Text
+                style={[styles.infoValue, { color: currentTheme.colors.text }]}
+              >
+                {formatTime(time)}
+              </Text>
             </View>
           )}
 
-          {!settings.showTimer && (
+          {!settings.timer && (
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Size</Text>
-              <Text style={styles.infoValue}>
+              <Text
+                style={[styles.infoLabel, { color: currentTheme.colors.text }]}
+              >
+                Size
+              </Text>
+              <Text
+                style={[styles.infoValue, { color: currentTheme.colors.text }]}
+              >
                 {boardSize}×{boardSize}
               </Text>
             </View>
@@ -257,8 +289,14 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
 
         {settings.showScore && gameStarted && (
           <View style={styles.scoreContainer}>
-            <Text style={styles.scoreLabel}>Score</Text>
-            <Text style={styles.scoreValue}>
+            <Text
+              style={[styles.scoreLabel, { color: currentTheme.colors.text }]}
+            >
+              Score
+            </Text>
+            <Text
+              style={[styles.scoreValue, { color: currentTheme.colors.text }]}
+            >
               {Math.max(0, 1000 - moves * 10 - time * 2)}
             </Text>
           </View>

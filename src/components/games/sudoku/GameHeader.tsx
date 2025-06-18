@@ -32,6 +32,8 @@ interface GameHeaderProps {
   settings: SudokuSettings;
   isPaused?: boolean;
   gameType: GameType;
+  onPause?: () => void;
+  onResume?: () => void;
 }
 
 const GameHeader: React.FC<GameHeaderProps> = ({
@@ -46,6 +48,8 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   settings,
   isPaused = false,
   gameType,
+  onPause,
+  onResume,
 }) => {
   const { currentTheme } = useTheme();
   const { playSound } = useSound();
@@ -57,6 +61,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   const popupIdCounter = useRef(0);
   const scoreContainerRef = useRef<View>(null);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Animate score changes
   useEffect(() => {
@@ -153,6 +158,15 @@ const GameHeader: React.FC<GameHeaderProps> = ({
     })
   );
 
+  // Add effect to handle pause state when dropdown opens/closes
+  useEffect(() => {
+    if (isDropdownOpen) {
+      onPause?.();
+    } else {
+      onResume?.();
+    }
+  }, [isDropdownOpen]);
+
   return (
     <View style={[styles.container, { padding: currentTheme.spacing.small }]}>
       {settings.showScore && (
@@ -200,6 +214,8 @@ const GameHeader: React.FC<GameHeaderProps> = ({
                 value={difficulty}
                 options={difficultyOptions}
                 onValueChange={onDifficultyChange ?? (() => {})}
+                onOpen={() => setIsDropdownOpen(true)}
+                onClose={() => setIsDropdownOpen(false)}
               />
             </View>
           ) : (
@@ -219,7 +235,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
               },
             ]}
           >
-            <Timer isPaused={isPaused} />
+            <Timer isPaused={isPaused || isDropdownOpen} />
           </View>
         )}
       </View>

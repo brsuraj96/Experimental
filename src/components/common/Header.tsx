@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -92,12 +92,36 @@ const Header = <T extends SettingsWithTimer>({
     }
   }, [subtitle]);
 
-  const handleDifficultyChange = (itemValue: Difficulty) => {
-    setSelectedDifficulty(itemValue);
-    if (onDifficultyChange) {
-      onDifficultyChange(itemValue);
+  // Handle theme selector visibility changes
+  useEffect(() => {
+    if (showThemeSelector) {
+      onPause?.();
+    } else if (!showThemeSelector) {
+      onResume?.();
     }
-  };
+  }, [showThemeSelector]);
+
+  // Handle difficulty selector visibility changes
+  const handleDifficultyPress = useCallback(() => {
+    if (Platform.OS === "ios") {
+      if (onPause) {
+        onPause();
+      }
+    }
+  }, [onPause]);
+
+  const handleDifficultyChange = useCallback(
+    (itemValue: Difficulty) => {
+      setSelectedDifficulty(itemValue);
+      if (onDifficultyChange) {
+        onDifficultyChange(itemValue);
+      }
+      if (Platform.OS === "ios" && onResume) {
+        onResume();
+      }
+    },
+    [onDifficultyChange, onResume]
+  );
 
   const renderDifficultySelector = () => {
     if (Platform.OS === "android") {
@@ -119,19 +143,11 @@ const Header = <T extends SettingsWithTimer>({
         </View>
       );
     } else {
-      // For iOS and other platforms, keep the original TouchableOpacity selector
       return (
         <View style={styles.difficultyContainer}>
           <TouchableOpacity
             style={styles.difficultyButton}
-            onPress={() => {
-              const currentIndex = difficulties.indexOf(selectedDifficulty);
-              const nextDifficulty =
-                difficulties[(currentIndex + 1) % difficulties.length];
-              if (onDifficultyChange) {
-                onDifficultyChange(nextDifficulty);
-              }
-            }}
+            onPress={handleDifficultyPress}
           >
             <View style={styles.dropdownContainer}>
               <Text style={styles.difficultyText}>{selectedDifficulty}</Text>
@@ -451,9 +467,9 @@ const Header = <T extends SettingsWithTimer>({
               onPress={() => {
                 // First pause the game, then navigate to settings
                 onPause?.();
-                setTimeout(() => {
-                  navigation.navigate("Settings");
-                }, 0);
+                // setTimeout(() => {
+                navigation.navigate("Settings");
+                // }, 0);
               }}
               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >

@@ -8,7 +8,12 @@ import {
   AppStateStatus,
   useWindowDimensions,
 } from "react-native";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import {
+  RouteProp,
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import {
   RootStackParamList,
@@ -77,12 +82,44 @@ type ExtendedSlideTilesSettings = SlideTilesSettings & {
   showScore: boolean;
 };
 
+const getGameTitle = (gameType: GameType): string => {
+  switch (gameType) {
+    case GameType.SUDOKU:
+      return "Sudoku";
+    case GameType.SLIDE_TILES:
+      return "Slide Tiles";
+    case GameType.FLOW_FREE:
+      return "Flow Free";
+    case GameType.WORDSEARCH:
+      return "Word Search";
+    case GameType.CROSSWORD:
+      return "Crossword";
+    case GameType.WATER_FLOW:
+      return "Water Flow";
+    case GameType.MATCHSTICK:
+      return "Matchstick";
+    case GameType.SPOT_DIFFERENCE:
+      return "Spot Difference";
+    default:
+      return "Game";
+  }
+};
+
 const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   const { gameType, difficulty } = route.params;
   const { baseSettings, gameSettings } = useSettings();
   const { currentTheme } = useTheme();
   const { playSound } = useSound();
-  const { timer, start, pause, resume, stop, reset } = useTimer();
+  const {
+    timer,
+    start,
+    pause,
+    resume,
+    stop,
+    reset,
+    isRunning,
+    isPaused: timerIsPaused,
+  } = useTimer();
   const windowDimensions = useWindowDimensions();
   const isLandscape = windowDimensions.width > windowDimensions.height;
 
@@ -98,19 +135,79 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
     previousScore: 0,
   });
 
-  // Memoize handlers to prevent recreation
+  // Sync timer state with game state
+  useEffect(() => {
+    if (gameState.isPaused && !timerIsPaused) {
+      pause();
+    } else if (
+      !gameState.isPaused &&
+      timerIsPaused &&
+      !gameState.isGameCompleted
+    ) {
+      resume();
+    }
+  }, [
+    gameState.isPaused,
+    timerIsPaused,
+    gameState.isGameCompleted,
+    pause,
+    resume,
+  ]);
+
+  // Handle app state changes
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active" && gameState.isPaused) {
+        handleResume();
+      } else if (nextAppState === "background" && !gameState.isPaused) {
+        handlePause();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [gameState.isPaused]);
+
+  // Handle navigation focus/blur
+  useEffect(() => {
+    const unsubscribeFocus = navigation.addListener("focus", () => {
+      if (gameState.isPaused) {
+        handleResume();
+      }
+    });
+
+    const unsubscribeBlur = navigation.addListener("blur", () => {
+      if (!gameState.isPaused) {
+        handlePause();
+      }
+    });
+
+    return () => {
+      unsubscribeFocus();
+      unsubscribeBlur();
+    };
+  }, [navigation, gameState.isPaused]);
+
+  // Handle dialog visibility changes
+  useEffect(() => {
+    if (gameState.showExitDialog || gameState.showResetDialog) {
+      handlePause();
+    }
+  }, [gameState.showExitDialog, gameState.showResetDialog]);
+
   const handleExitGame = useCallback(() => {
     setGameState((prev) => ({ ...prev, showExitDialog: true }));
   }, []);
 
   const handleCancelExit = useCallback(() => {
+    handleResume();
     setGameState((prev) => ({ ...prev, showExitDialog: false }));
   }, []);
 
   const handleConfirmExit = useCallback(() => {
     setGameState((prev) => ({ ...prev, showExitDialog: false }));
     stop();
-    // Use setTimeout to ensure dialog is closed before navigation
     setTimeout(() => {
       navigation.goBack();
     }, 100);
@@ -121,6 +218,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   }, []);
 
   const handleCancelReset = useCallback(() => {
+    handleResume();
     setGameState((prev) => ({ ...prev, showResetDialog: false }));
   }, []);
 
@@ -156,14 +254,16 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   }, [baseSettings, stop, playSound]);
 
   const handlePause = useCallback(() => {
-    setGameState((prev) => ({ ...prev, isPaused: true }));
-    pause();
-  }, [pause]);
+    if (!gameState.isPaused) {
+      setGameState((prev) => ({ ...prev, isPaused: true }));
+    }
+  }, [gameState.isPaused]);
 
   const handleResume = useCallback(() => {
-    setGameState((prev) => ({ ...prev, isPaused: false }));
-    resume();
-  }, [resume]);
+    if (gameState.isPaused && !gameState.isGameCompleted) {
+      setGameState((prev) => ({ ...prev, isPaused: false }));
+    }
+  }, [gameState.isPaused, gameState.isGameCompleted]);
 
   // Memoize back handler
   const backAction = useCallback(() => {
@@ -184,43 +284,9 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
     return () => backHandler.remove();
   }, [backAction]);
 
-  // Handle app state changes
-  useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextAppState) => {
-      if (nextAppState === "active" && gameState.isPaused) {
-        handleResume();
-      } else if (nextAppState === "background" && !gameState.isPaused) {
-        handlePause();
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [gameState.isPaused, handlePause, handleResume]);
-
-  // Memoize base game props
-  const baseGameProps = useMemo(
-    () => ({
-      difficulty,
-      onMove: handleMove,
-      onComplete: handleComplete,
-      orientation: isLandscape ? "landscape" : "portrait",
-      isGameCompleted: gameState.isGameCompleted,
-      isPaused: gameState.isPaused,
-    }),
-    [
-      difficulty,
-      handleMove,
-      handleComplete,
-      isLandscape,
-      gameState.isGameCompleted,
-      gameState.isPaused,
-    ]
-  );
-
   const handleDifficultyChange = useCallback(
     (newDifficulty: Difficulty) => {
+      handlePause();
       navigation.replace("Game", {
         gameType,
         difficulty: newDifficulty,
@@ -230,103 +296,76 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   );
 
   const gameProps = useMemo(() => {
+    const baseProps = {
+      difficulty,
+      onMove: handleMove,
+      onComplete: handleComplete,
+      orientation: isLandscape ? "landscape" : "portrait",
+      settings: gameSettings[gameType],
+      isPaused: gameState.isPaused,
+    };
+
     switch (gameType) {
       case GameType.SUDOKU:
         return {
-          ...baseGameProps,
-          settings: gameSettings[GameType.SUDOKU],
+          ...baseProps,
           onDifficultyChange: handleDifficultyChange,
-        } as SudokuGameProps;
+          onPause: handlePause,
+          onResume: handleResume,
+        };
       case GameType.SLIDE_TILES:
         return {
-          ...baseGameProps,
-          settings: {
-            ...gameSettings[GameType.SLIDE_TILES],
-            timer: true,
-            completionRate: true,
-            lightningMode: false,
-            showScore: true,
-            showTimer: true,
-            allowUndo: true,
-            allowRedo: true,
-          },
+          ...baseProps,
           onDifficultyChange: handleDifficultyChange,
-        } as SlideTilesGameProps;
+        };
       case GameType.FLOW_FREE:
         return {
-          ...baseGameProps,
-          settings: {
-            ...gameSettings[GameType.FLOW_FREE],
-            showTimer: true,
-            allowUndo: true,
-            allowRedo: true,
-          },
+          ...baseProps,
           onDifficultyChange: handleDifficultyChange,
-        } as FlowFreeGameProps;
+        };
       case GameType.WORDSEARCH:
         return {
-          ...baseGameProps,
-          settings: {
-            ...gameSettings[GameType.WORDSEARCH],
-            showTimer: true,
-            allowUndo: true,
-            allowRedo: true,
-          },
+          ...baseProps,
           onDifficultyChange: handleDifficultyChange,
-        } as WordSearchGameProps;
+        };
       case GameType.CROSSWORD:
         return {
-          ...baseGameProps,
-          settings: {
-            ...gameSettings[GameType.CROSSWORD],
-            showTimer: true,
-            allowUndo: true,
-            allowRedo: true,
-          },
+          ...baseProps,
           onDifficultyChange: handleDifficultyChange,
-        } as CrosswordGameProps;
+        };
       case GameType.WATER_FLOW:
         return {
-          ...baseGameProps,
-          settings: {
-            ...gameSettings[GameType.WATER_FLOW],
-            showTimer: true,
-            allowUndo: true,
-            allowRedo: true,
-          },
+          ...baseProps,
           onDifficultyChange: handleDifficultyChange,
-        } as WaterFlowGameProps;
+        };
       case GameType.MATCHSTICK:
         return {
-          ...baseGameProps,
-          settings: {
-            ...gameSettings[GameType.MATCHSTICK],
-            showTimer: true,
-            allowUndo: true,
-            allowRedo: true,
-          },
+          ...baseProps,
           onDifficultyChange: handleDifficultyChange,
-        } as MatchstickGameProps;
+        };
       case GameType.SPOT_DIFFERENCE:
         return {
-          ...baseGameProps,
-          settings: {
-            ...gameSettings[GameType.SPOT_DIFFERENCE],
-            showTimer: true,
-            allowUndo: true,
-            allowRedo: true,
-          },
+          ...baseProps,
           onDifficultyChange: handleDifficultyChange,
-        } as SpotDifferenceGameProps;
+        };
       default:
-        return baseGameProps;
+        return baseProps;
     }
-  }, [baseGameProps, gameType, gameSettings, handleDifficultyChange]);
+  }, [
+    difficulty,
+    handleMove,
+    handleComplete,
+    isLandscape,
+    gameSettings,
+    gameType,
+    gameState.isPaused,
+    handleDifficultyChange,
+  ]);
 
   // Memoize header props
   const headerProps = useMemo(
     () => ({
-      title: gameType,
+      title: getGameTitle(gameType),
       showBackButton: true,
       onBack: handleExitGame,
       showSettings: true,

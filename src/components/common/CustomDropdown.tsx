@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
@@ -9,6 +9,8 @@ interface CustomDropdownProps<T> {
   options: { label: string; value: T }[];
   onValueChange: (value: T) => void;
   style?: any;
+  onOpen?: () => void;
+  onClose?: () => void;
 }
 
 const CustomDropdown = <T extends string>({
@@ -16,10 +18,20 @@ const CustomDropdown = <T extends string>({
   options,
   onValueChange,
   style,
+  onOpen,
+  onClose,
 }: CustomDropdownProps<T>) => {
   const [isOpen, setIsOpen] = useState(false);
   const { currentTheme } = useTheme();
   const selectedOption = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    if (isOpen) {
+      onOpen?.();
+    } else {
+      onClose?.();
+    }
+  }, [isOpen, onOpen, onClose]);
 
   const themedStyles = StyleSheet.create({
     container: {
