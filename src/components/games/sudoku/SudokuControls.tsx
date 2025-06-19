@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import { Settings } from "../../../context/SettingsContext";
+import { SudokuSettings } from "../../../types/settings";
 import {
   View,
   TouchableOpacity,
@@ -34,7 +34,8 @@ interface SudokuControlsProps {
   numberFirstMode: boolean;
   lockedNumber: number | null;
   disableNotesButton: boolean;
-  settings: Settings;
+  settings: SudokuSettings;
+  numpadFontSize: number;
 }
 
 const createStyles = (theme: any) =>
@@ -102,7 +103,6 @@ const createStyles = (theme: any) =>
       alignItems: "center",
     },
     numberText: {
-      fontSize: 24,
       fontWeight: "bold",
       color: theme.colors.text,
     },
@@ -203,6 +203,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
     lockedNumber,
     disableNotesButton,
     settings,
+    numpadFontSize,
   }) => {
     const { currentTheme } = useTheme();
     const styles = useMemo(() => createStyles(currentTheme), [currentTheme]);
@@ -432,6 +433,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
               <Text
                 style={[
                   styles.numberText,
+                  { fontSize: numpadFontSize },
                   (isDisabled || isFullyUsed) && styles.disabledNumberText,
                   numberFirstMode && isLocked && styles.lockedNumberText,
                 ]}
@@ -482,6 +484,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
         numberFirstMode,
         selectedNumber,
         settings,
+        numpadFontSize,
       ]
     );
 

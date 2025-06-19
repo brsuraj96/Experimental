@@ -662,6 +662,14 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
 
     const isLandscape = orientation === "landscape";
 
+    // Font size mapping
+    const fontSizeMap = {
+      small: { cell: 18, numpad: 20, note: 8 },
+      medium: { cell: 22, numpad: 24, note: 10 },
+      large: { cell: 26, numpad: 28, note: 14 },
+    };
+    const fontSizes = fontSizeMap[settings.fontSize] || fontSizeMap.medium;
+
     const styles = StyleSheet.create({
       container: {
         flex: 1,
@@ -722,6 +730,8 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
             onCellPress={handleCellPress}
             settings={settings}
             lockedNumber={lockedNumber}
+            cellFontSize={fontSizes.cell}
+            noteFontSize={fontSizes.note}
           />
         </View>
         <View style={isLandscape ? styles.landscapeControls : styles.controls}>
@@ -754,6 +764,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
                 : false
             }
             settings={settings}
+            numpadFontSize={fontSizes.numpad}
           />
         </View>
       </View>

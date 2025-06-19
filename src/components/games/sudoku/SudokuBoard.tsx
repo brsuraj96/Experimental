@@ -11,6 +11,8 @@ interface SudokuBoardProps {
   onCellPress: (row: number, col: number) => void;
   settings: SudokuSettings;
   lockedNumber: number | null;
+  cellFontSize: number;
+  noteFontSize: number;
 }
 
 const SudokuBoard: React.FC<SudokuBoardProps> = ({
@@ -19,6 +21,8 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({
   onCellPress,
   settings,
   lockedNumber,
+  cellFontSize,
+  noteFontSize,
 }) => {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
@@ -147,6 +151,8 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({
                 lockedNumber={lockedNumber}
                 rightBorder={rightBorder}
                 bottomBorder={bottomBorder}
+                fontSize={cellFontSize}
+                noteFontSize={noteFontSize}
               />
             );
           })}

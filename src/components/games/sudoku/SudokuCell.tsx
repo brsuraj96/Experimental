@@ -23,6 +23,8 @@ interface SudokuCellProps {
   lockedNumber?: number | null;
   rightBorder?: boolean;
   bottomBorder?: boolean;
+  fontSize: number;
+  noteFontSize: number;
 }
 
 const SudokuCell: React.FC<SudokuCellProps> = ({
@@ -40,6 +42,8 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
   lockedNumber,
   rightBorder,
   bottomBorder,
+  fontSize,
+  noteFontSize,
 }) => {
   const { currentTheme } = useTheme();
   const rippleAnim = useRef(new Animated.Value(0)).current;
@@ -94,7 +98,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
       borderColor: currentTheme.colors.primary,
     },
     value: {
-      fontSize: 22,
+      fontSize,
       fontWeight: "600",
       color: currentTheme.colors.text,
       textAlign: "center",
@@ -122,9 +126,9 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
     },
     noteText: {
       position: "absolute",
-      fontSize: 10,
+      fontSize: noteFontSize,
       textAlign: "center",
-      lineHeight: 12,
+      lineHeight: noteFontSize + 2,
       color: currentTheme.colors.textSecondary,
     },
     rippleEffect: {
