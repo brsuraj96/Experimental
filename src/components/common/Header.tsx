@@ -33,6 +33,7 @@ interface HeaderProps<T extends SettingsWithTimer> {
   onHint?: () => void;
   onUndo?: () => void;
   onReset?: () => void;
+  onRestart?: () => void;
   isTimer?: boolean;
   containerStyle?: ViewStyle;
   onDifficultyChange?: (difficulty: Difficulty) => void;
@@ -61,6 +62,7 @@ const Header = <T extends SettingsWithTimer>({
   onHint,
   onUndo,
   onReset,
+  onRestart,
   isTimer = false,
   containerStyle,
   onDifficultyChange,
@@ -535,7 +537,7 @@ const Header = <T extends SettingsWithTimer>({
                 style={[styles.pauseButton, styles.restartButton]}
                 onPress={() => {
                   setShowPauseDialog(false);
-                  onReset?.();
+                  onRestart?.();
                 }}
               >
                 <Text style={styles.pauseButtonText}>Restart</Text>

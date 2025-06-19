@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useCallback, memo, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  memo,
+  useMemo,
+  useRef,
+} from "react";
 import {
   View,
   StyleSheet,
@@ -46,7 +53,9 @@ import useOrientation from "../hooks/useOrientation";
 import { useSound, SoundType } from "../hooks/useSound";
 import Header from "../components/common/Header";
 import Dialog from "../components/common/Dialog";
-import SudokuGame from "../components/games/sudoku/SudokuGame";
+import SudokuGame, {
+  SudokuGameHandle,
+} from "../components/games/sudoku/SudokuGame";
 import SlideTilesGame from "../components/games/slideTiles/SlideTilesGame";
 import FlowFreeGame from "../components/games/flowFree/FlowFreeGame";
 import WaterFlowGame from "../components/games/waterFlow/WaterFlowGame";
@@ -135,6 +144,9 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
     previousScore: 0,
   });
 
+  // Ref for SudokuGame
+  const sudokuGameRef = useRef<SudokuGameHandle>(null);
+
   // Sync timer state with game state
   useEffect(() => {
     if (gameState.isPaused && !timerIsPaused) {
@@ -217,6 +229,13 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
     setGameState((prev) => ({ ...prev, showResetDialog: true }));
   }, []);
 
+  const handleRestart = useCallback(() => {
+    if (gameType === GameType.SUDOKU && sudokuGameRef.current) {
+      sudokuGameRef.current.restart();
+      handleResume();
+    }
+  }, [gameType]);
+
   const handleCancelReset = useCallback(() => {
     handleResume();
     setGameState((prev) => ({ ...prev, showResetDialog: false }));
@@ -233,6 +252,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
     }));
     reset();
     start();
+    handleResume();
   }, [start, reset]);
 
   const handleMove = useCallback(() => {
@@ -371,6 +391,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
       onBack: handleExitGame,
       showSettings: true,
       onReset: handleReset,
+      onRestart: handleRestart,
       onPause: handlePause,
       onResume: handleResume,
       isPaused: gameState.isPaused,
@@ -396,7 +417,9 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   const renderGame = () => {
     switch (gameType) {
       case GameType.SUDOKU:
-        return <MemoizedSudokuGame {...(gameProps as SudokuGameProps)} />;
+        return (
+          <SudokuGame ref={sudokuGameRef} {...(gameProps as SudokuGameProps)} />
+        );
       case GameType.SLIDE_TILES:
         return (
           <MemoizedSlideTilesGame {...(gameProps as SlideTilesGameProps)} />
