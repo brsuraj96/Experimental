@@ -366,6 +366,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   const headerProps = useMemo(
     () => ({
       title: getGameTitle(gameType),
+      subtitle: difficulty,
       showBackButton: true,
       onBack: handleExitGame,
       showSettings: true,

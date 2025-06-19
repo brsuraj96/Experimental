@@ -78,7 +78,7 @@ const Header = <T extends SettingsWithTimer>({
     navigationProp || useNavigation<NavigationProp<RootStackParamList>>();
 
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(
-    (subtitle as Difficulty) || Difficulty.EASY
+    subtitle as Difficulty
   );
   const [showPauseDialog, setShowPauseDialog] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
@@ -503,7 +503,9 @@ const Header = <T extends SettingsWithTimer>({
               </View>
               <View style={styles.gameInfoItem}>
                 <Text style={styles.gameInfoLabel}>Difficulty</Text>
-                <Text style={styles.gameInfoValue}>{selectedDifficulty}</Text>
+                <Text style={styles.gameInfoValue}>
+                  {subtitle ? subtitle : selectedDifficulty}
+                </Text>
               </View>
             </View>
 
