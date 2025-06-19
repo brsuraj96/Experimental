@@ -28,24 +28,22 @@ const defaultBaseSettings: BaseSettings = {
   language: "en" as Language,
 };
 
-export const defaultSudokuSettings: SudokuSettings = {
-  ...defaultBaseSettings,
+const defaultGameSettings = {
   timer: true,
   smartHint: true,
+  showScore: true,
   showProgress: true,
+};
+
+export const defaultSudokuSettings: SudokuSettings = {
+  ...defaultBaseSettings,
+  ...defaultGameSettings,
   mistakeLimit: false,
   numberFirst: false,
   highlightPeer: true,
   highlightSameNumbers: true,
   autoRemoveNotes: true,
   remainingNumbers: true,
-  showScore: true,
-};
-
-const defaultGameSettings = {
-  timer: true,
-  smartHint: true,
-  showProgress: true,
 };
 
 const defaultSlideTilesSettings: SlideTilesSettings = {

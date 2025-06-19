@@ -175,6 +175,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
             score={score}
             previousScore={previousScore}
             maxScore={1000}
+            showProgress={settings.showProgress}
           />
           {scorePopups.map((popup) => (
             <ScorePopup

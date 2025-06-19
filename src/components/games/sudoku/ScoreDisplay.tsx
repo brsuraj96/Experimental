@@ -15,6 +15,7 @@ interface ScoreDisplayProps {
     icon?: string;
     color?: string;
   }>;
+  showProgress?: boolean;
 }
 
 const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
@@ -22,6 +23,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   previousScore = 0,
   maxScore = 3000,
   notifications = [],
+  showProgress = true,
 }) => {
   const { currentTheme } = useTheme();
   const scoreAnimation = useRef(new Animated.Value(previousScore)).current;
@@ -168,25 +170,27 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         ))}
       </View>
 
-      <View
-        style={[
-          styles.progressBarContainer,
-          { backgroundColor: currentTheme.colors.backgroundMedium },
-        ]}
-      >
-        <Animated.View
+      {showProgress && (
+        <View
           style={[
-            styles.progressBar,
-            {
-              width: progressAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: ["0%", "100%"],
-              }),
-              backgroundColor: currentTheme.colors.accent,
-            },
+            styles.progressBarContainer,
+            { backgroundColor: currentTheme.colors.backgroundMedium },
           ]}
-        />
-      </View>
+        >
+          <Animated.View
+            style={[
+              styles.progressBar,
+              {
+                width: progressAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0%", "100%"],
+                }),
+                backgroundColor: currentTheme.colors.accent,
+              },
+            ]}
+          />
+        </View>
+      )}
     </View>
   );
 };

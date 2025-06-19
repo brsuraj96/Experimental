@@ -316,6 +316,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           },
           {
             type: "toggle" as const,
+            key: "showScore" as SettingKey,
+            label: "Show Score",
+            icon: "star",
+          },
+          {
+            type: "toggle" as const,
             key: "showProgress" as SettingKey,
             label: "Show Progress",
             icon: "chart-line",
@@ -325,12 +331,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       {
         title: "Sudoku Settings",
         items: [
-          // {
-          //   type: "toggle" as const,
-          //   key: "timer" as SettingKey,
-          //   label: "Timer",
-          //   icon: "clock",
-          // },
           {
             type: "toggle" as const,
             key: "mistakeLimit" as SettingKey,
@@ -509,6 +509,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               ]}
             >
               {section.items.map((item) => {
+                if (
+                  (item.key as string) === "showProgress" &&
+                  !("showScore" in currentSettings && currentSettings.showScore)
+                ) {
+                  return null;
+                }
                 const settingValue =
                   item.type === "link"
                     ? false
