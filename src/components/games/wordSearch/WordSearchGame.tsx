@@ -11,6 +11,7 @@ import { useSound } from "../../../hooks/useSound";
 import WordSearchBoard from "./WordSearchBoard";
 import WordList from "./WordList";
 import { generateWordSearchLevel } from "./wordSearchGenerator";
+import i18n from "../../../locales/i18n";
 
 interface WordSearchGameProps {
   difficulty: Difficulty;

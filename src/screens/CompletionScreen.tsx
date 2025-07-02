@@ -17,6 +17,7 @@ import { useSound } from "../hooks/useSound";
 import IconSudoku from "../assets/icons/IconSudoku";
 import IconSlideTiles from "../assets/icons/IconSlideTiles";
 import IconFlowFree from "../assets/icons/IconFlowFree";
+import { useLocalization } from "../context/LocalizationContext";
 
 type CompletionScreenRouteProp = RouteProp<RootStackParamList, "Completion">;
 type CompletionScreenNavigationProp = StackNavigationProp<
@@ -91,6 +92,7 @@ const CompletionScreen = () => {
   const { gameType, difficulty, time, moves } = route.params;
   const { updateProgress, getNextLevel } = useGameContext();
   const { playSound } = useSound();
+  const { t, locale } = useLocalization();
 
   const formatTime = useCallback((timeInSeconds: number): string => {
     const minutes = Math.floor(timeInSeconds / 60);
@@ -101,14 +103,17 @@ const CompletionScreen = () => {
   const handleShare = useCallback(async () => {
     try {
       await Share.share({
-        message: `I just completed ${gameType} (${difficulty}) in ${formatTime(
-          time
-        )} with ${moves} moves in Puzzle World! Can you beat that?`,
+        message: t("shareMessage", {
+          gameType,
+          difficulty,
+          time: formatTime(time),
+          moves,
+        }),
       });
     } catch (error) {
       console.error("Error sharing:", error);
     }
-  }, [gameType, difficulty, time, moves, formatTime]);
+  }, [gameType, difficulty, time, moves, formatTime, t, locale]);
 
   const handlePlayAgain = useCallback(() => {
     navigation.navigate("Game", { gameType, difficulty });
@@ -217,53 +222,48 @@ const CompletionScreen = () => {
           width: "100%",
         },
       }),
-    []
+    [theme.colors]
   );
 
   return (
     <View style={styles.container}>
       <Confetti />
-
       <View style={styles.content}>
         <View style={styles.iconContainer}>{renderGameIcon()}</View>
-
-        <Text style={styles.title}>Puzzle Completed!</Text>
+        <Text style={styles.title}>{t("puzzleCompleted")}</Text>
         <Text style={styles.gameInfo}>
-          {gameType} - {difficulty}
+          {t(gameType)} - {t(difficulty)}
         </Text>
-
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Time</Text>
+            <Text style={styles.statLabel}>{t("time")}</Text>
             <Text style={styles.statValue}>{formatTime(time)}</Text>
           </View>
-
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Moves</Text>
+            <Text style={styles.statLabel}>{t("moves")}</Text>
             <Text style={styles.statValue}>{moves}</Text>
           </View>
         </View>
-
         <View style={styles.buttonsContainer}>
           <ActionButton
             onPress={handleShare}
-            text="Share"
+            text={t("share")}
             themeColors={theme.colors}
           />
           <ActionButton
             onPress={handlePlayAgain}
-            text="Play Again"
+            text={t("playAgain")}
             themeColors={theme.colors}
           />
           <ActionButton
             onPress={handleNextLevel}
-            text="Next Level"
+            text={t("nextLevel")}
             isPrimary
             themeColors={theme.colors}
           />
           <ActionButton
             onPress={handleHome}
-            text="Home"
+            text={t("home")}
             themeColors={theme.colors}
           />
         </View>

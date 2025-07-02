@@ -64,6 +64,7 @@ import WordSearchGame from "../components/games/wordSearch/WordSearchGame";
 import SpotDifferenceGame from "../components/games/spotDifference/SpotDifferenceGame";
 import MatchstickGame from "../components/games/matchstick/MatchstickGame";
 import { useTimer } from "../context/TimerContext";
+import { useLocalization } from "../context/LocalizationContext";
 
 type GameScreenRouteProp = RouteProp<RootStackParamList, "Game">;
 type GameScreenNavigationProp = StackNavigationProp<RootStackParamList, "Game">;
@@ -91,26 +92,29 @@ type ExtendedSlideTilesSettings = SlideTilesSettings & {
   showScore: boolean;
 };
 
-const getGameTitle = (gameType: GameType): string => {
+const getGameTitle = (
+  gameType: GameType,
+  t?: (key: string) => string
+): string => {
   switch (gameType) {
     case GameType.SUDOKU:
-      return "Sudoku";
+      return t ? t("sudoku") : "Sudoku";
     case GameType.SLIDE_TILES:
-      return "Slide Tiles";
+      return t ? t("slideTiles") : "Slide Tiles";
     case GameType.FLOW_FREE:
-      return "Flow Free";
+      return t ? t("flowFree") : "Flow Free";
     case GameType.WORDSEARCH:
-      return "Word Search";
+      return t ? t("wordSearch") : "Word Search";
     case GameType.CROSSWORD:
-      return "Crossword";
+      return t ? t("crossword") : "Crossword";
     case GameType.WATER_FLOW:
-      return "Water Flow";
+      return t ? t("waterFlow") : "Water Flow";
     case GameType.MATCHSTICK:
-      return "Matchstick";
+      return t ? t("matchstick") : "Matchstick";
     case GameType.SPOT_DIFFERENCE:
-      return "Spot Difference";
+      return t ? t("spotDifference") : "Spot Difference";
     default:
-      return "Game";
+      return t ? t("game") : "Game";
   }
 };
 
@@ -131,6 +135,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   } = useTimer();
   const windowDimensions = useWindowDimensions();
   const isLandscape = windowDimensions.width > windowDimensions.height;
+  const { t, locale } = useLocalization();
 
   // Consolidate game state into a single object
   const [gameState, setGameState] = useState({
@@ -385,8 +390,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   // Memoize header props
   const headerProps = useMemo(
     () => ({
-      title: getGameTitle(gameType),
-      subtitle: difficulty,
+      title: t(getGameTitle(gameType, t)),
+      subtitle: t(difficulty.toLowerCase()),
       showBackButton: true,
       onBack: handleExitGame,
       showSettings: true,
@@ -410,6 +415,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
       baseSettings,
       gameState.isGameCompleted,
       navigation,
+      t,
+      locale,
+      difficulty,
+      handleRestart,
     ]
   );
 
@@ -460,21 +469,25 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
       {renderGame()}
       <Dialog
         visible={gameState.showExitDialog}
-        title="Exit Game"
-        message="Are you sure you want to exit the game? Your progress will be saved."
+        title={t("exit_game")}
+        message={t("exit_game_message")}
         buttons={[
-          { text: "Cancel", onPress: handleCancelExit, style: "cancel" },
-          { text: "Exit", onPress: handleConfirmExit, style: "destructive" },
+          { text: t("cancel"), onPress: handleCancelExit, style: "cancel" },
+          { text: t("exit"), onPress: handleConfirmExit, style: "destructive" },
         ]}
         onDismiss={handleCancelExit}
       />
       <Dialog
         visible={gameState.showResetDialog}
-        title="Reset Game"
-        message="Are you sure you want to reset? Your progress will be saved."
+        title={t("reset_game")}
+        message={t("reset_game_message")}
         buttons={[
-          { text: "Cancel", onPress: handleCancelReset, style: "cancel" },
-          { text: "Reset", onPress: handleConfirmReset, style: "destructive" },
+          { text: t("cancel"), onPress: handleCancelReset, style: "cancel" },
+          {
+            text: t("reset"),
+            onPress: handleConfirmReset,
+            style: "destructive",
+          },
         ]}
         onDismiss={handleCancelReset}
       />

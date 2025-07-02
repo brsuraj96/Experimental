@@ -16,6 +16,7 @@ import {
   Easing,
 } from "react-native";
 import { useTheme } from "../../../context/ThemeContext";
+import { useLocalization } from "../../../context/LocalizationContext";
 import { FontAwesome5 } from "@expo/vector-icons";
 
 interface SudokuControlsProps {
@@ -206,6 +207,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
     numpadFontSize,
   }) => {
     const { currentTheme } = useTheme();
+    const { t } = useLocalization();
     const styles = useMemo(() => createStyles(currentTheme), [currentTheme]);
     const [longPressActive, setLongPressActive] = useState<number | null>(null);
     const fadeAnims = useRef<{ [key: number]: Animated.Value }>({});
@@ -317,7 +319,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
           disabled={disabled}
         >
           <FontAwesome5 name={icon} style={styles.iconText} />
-          <Text style={styles.actionText}>{text}</Text>
+          <Text style={styles.actionText}>{t(text)}</Text>
         </TouchableOpacity>
       ),
       [styles]
@@ -494,7 +496,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
           {renderActionButton({
             icon: "pencil-alt",
             onPress: onNotesToggle,
-            text: "Note",
+            text: "notes",
             isActive: isNoteMode,
             testID: "note-button",
             disabled:
@@ -503,21 +505,21 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
           {renderActionButton({
             icon: "undo",
             onPress: onUndoPress,
-            text: "Undo",
+            text: "undo",
             testID: "undo-button",
             disabled: !canUndo,
           })}
           {renderActionButton({
             icon: "eraser",
             onPress: onErasePress,
-            text: "Erase",
+            text: "erase",
             testID: "erase-button",
           })}
           {settings.smartHint &&
             renderActionButton({
               icon: "lightbulb",
               onPress: onHintPress,
-              text: "Hint",
+              text: "hint",
               testID: "hint-button",
             })}
         </View>

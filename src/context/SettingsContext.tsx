@@ -163,6 +163,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
 
+  // Update i18n locale when language changes
+  // React.useEffect(() => {
+  //   // @ts-ignore
+  //   i18n.locale = baseSettings.language;
+  // }, [baseSettings.language]);
+
   const value = useMemo(
     () => ({
       baseSettings,

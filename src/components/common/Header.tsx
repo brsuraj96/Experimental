@@ -15,6 +15,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { BaseSettings } from "../../types/settings";
 import Timer from "./Timer";
 import { useTimer } from "../../context/TimerContext";
+import { useLocalization } from "../../context/LocalizationContext";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
@@ -76,6 +77,7 @@ const Header = <T extends SettingsWithTimer>({
   navigation: navigationProp,
 }: HeaderProps<T>) => {
   const { currentTheme } = useTheme();
+  const { t } = useLocalization();
   const navigation =
     navigationProp || useNavigation<NavigationProp<RootStackParamList>>();
 
@@ -137,7 +139,7 @@ const Header = <T extends SettingsWithTimer>({
             {difficulties.map((difficulty) => (
               <Picker.Item
                 key={difficulty}
-                label={difficulty}
+                label={t(difficulty.toLowerCase())}
                 value={difficulty}
               />
             ))}
@@ -152,7 +154,9 @@ const Header = <T extends SettingsWithTimer>({
             onPress={handleDifficultyPress}
           >
             <View style={styles.dropdownContainer}>
-              <Text style={styles.difficultyText}>{selectedDifficulty}</Text>
+              <Text style={styles.difficultyText}>
+                {t(selectedDifficulty.toLowerCase())}
+              </Text>
               <Text style={styles.dropdownIcon}>▼</Text>
             </View>
           </TouchableOpacity>
@@ -496,15 +500,15 @@ const Header = <T extends SettingsWithTimer>({
       {showPauseDialog && (
         <View style={styles.pauseOverlay}>
           <View style={styles.pauseDialog}>
-            <Text style={styles.pauseTitle}>Pause</Text>
+            <Text style={styles.pauseTitle}>{t("pause")}</Text>
 
             <View style={styles.gameInfoContainer}>
               <View style={styles.gameInfoItem}>
-                <Text style={styles.gameInfoLabel}>Time</Text>
+                <Text style={styles.gameInfoLabel}>{t("time")}</Text>
                 <Text style={styles.gameInfoValue}>{formatTime()}</Text>
               </View>
               <View style={styles.gameInfoItem}>
-                <Text style={styles.gameInfoLabel}>Difficulty</Text>
+                <Text style={styles.gameInfoLabel}>{t("difficulty")}</Text>
                 <Text style={styles.gameInfoValue}>
                   {subtitle ? subtitle : selectedDifficulty}
                 </Text>
@@ -519,7 +523,7 @@ const Header = <T extends SettingsWithTimer>({
                 style={styles.smartHintIcon}
               />
               <Text style={styles.smartHintText}>
-                Smart Hint can help you solve Sudoku games.
+                {t("smart_hint_description")}
               </Text>
             </View>
 
@@ -531,7 +535,7 @@ const Header = <T extends SettingsWithTimer>({
                   onResume?.();
                 }}
               >
-                <Text style={styles.pauseButtonText}>Resume</Text>
+                <Text style={styles.pauseButtonText}>{t("resume")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.pauseButton, styles.restartButton]}
@@ -540,7 +544,7 @@ const Header = <T extends SettingsWithTimer>({
                   onRestart?.();
                 }}
               >
-                <Text style={styles.pauseButtonText}>Restart</Text>
+                <Text style={styles.pauseButtonText}>{t("restart")}</Text>
               </TouchableOpacity>
             </View>
           </View>

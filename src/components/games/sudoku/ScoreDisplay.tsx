@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../../../context/ThemeContext";
+import { useLocalization } from "../../../context/LocalizationContext";
 
 interface ScoreDisplayProps {
   score: number;
@@ -26,6 +27,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   showProgress = true,
 }) => {
   const { currentTheme } = useTheme();
+  const { t } = useLocalization();
   const scoreAnimation = useRef(new Animated.Value(previousScore)).current;
   const progressAnimation = useRef(
     new Animated.Value(previousScore / maxScore)
@@ -85,7 +87,9 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
           size={16}
           color={currentTheme.colors.accent}
         />
-        <Text style={{ color: currentTheme.colors.text }}>{"Score: "}</Text>
+        <Text style={{ color: currentTheme.colors.text }}>
+          {t("score") + ": "}
+        </Text>
         <Animated.View
           style={{
             transform: [
@@ -153,7 +157,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                 { color: notification.color || currentTheme.colors.accent },
               ]}
             >
-              {notification.message}
+              {t(notification.message)}
               {notification.points !== 0 && (
                 <Text
                   style={[

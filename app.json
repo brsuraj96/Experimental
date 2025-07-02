@@ -11,7 +11,9 @@
     "splash": {
       "backgroundColor": "#1E1E2F"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.puzzleworld.app"
@@ -25,6 +27,9 @@
     "web": {
       "favicon": "./generated-icon.png",
       "bundler": "webpack"
-    }
+    },
+    "plugins": [
+      "expo-localization"
+    ]
   }
 }
