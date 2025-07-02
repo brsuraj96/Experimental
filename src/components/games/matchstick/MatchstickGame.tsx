@@ -6,6 +6,7 @@ import { useSound } from "../../../hooks/useSound";
 import MatchstickBoard from "./MatchstickBoard";
 import MatchstickControls from "./MatchstickControls";
 import { generateMatchstickLevel } from "./matchstickGenerator";
+import i18n from "../../../locales/i18n";
 
 interface MatchstickGameProps {
   difficulty: Difficulty;
@@ -116,7 +117,7 @@ const MatchstickGame: React.FC<MatchstickGameProps> = ({
   const handleHint = useCallback(() => {
     if (!level) return;
 
-    Alert.alert("Hint", level.hint);
+    Alert.alert(i18n.t("hint"), level.hint);
   }, [level]);
 
   // Handle rotation of the selected matchstick

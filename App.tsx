@@ -1,5 +1,6 @@
 import React, { useEffect, memo } from "react";
 import { SafeAreaView, StatusBar, StyleSheet, Platform } from "react-native";
+import { LocalizationProvider } from "./src/context/LocalizationContext";
 import { NavigationContainer } from "@react-navigation/native";
 import AppNavigator from "./src/navigation/AppNavigator";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
@@ -8,6 +9,7 @@ import { WebSocketProvider } from "./src/context/WebSocketContext";
 import { Provider as PaperProvider } from "react-native-paper";
 import { SettingsProvider } from "./src/context/SettingsContext";
 import { TimerProvider } from "./src/context/TimerContext";
+import "./src/locales/i18n";
 
 // Move setimmediate polyfill to a separate initialization file
 import "./src/utils/polyfills";
@@ -42,19 +44,21 @@ ThemedApp.displayName = "ThemedApp";
 
 // Move AppContent outside to prevent recreation on each render
 const AppContent = () => (
-  <TimerProvider initialTime={0} autoStart={true}>
-    <SettingsProvider>
-      <ThemeProvider>
-        <PaperProvider>
-          <GameProvider>
-            <NavigationContainer>
-              <ThemedApp />
-            </NavigationContainer>
-          </GameProvider>
-        </PaperProvider>
-      </ThemeProvider>
-    </SettingsProvider>
-  </TimerProvider>
+  <LocalizationProvider>
+    <TimerProvider initialTime={0} autoStart={true}>
+      <SettingsProvider>
+        <ThemeProvider>
+          <PaperProvider>
+            <GameProvider>
+              <NavigationContainer>
+                <ThemedApp />
+              </NavigationContainer>
+            </GameProvider>
+          </PaperProvider>
+        </ThemeProvider>
+      </SettingsProvider>
+    </TimerProvider>
+  </LocalizationProvider>
 );
 
 // Main app structure with proper provider nesting

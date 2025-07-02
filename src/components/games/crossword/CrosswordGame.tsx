@@ -31,6 +31,7 @@ import { theme } from "../../../styles/theme";
 import { useSound } from "../../../hooks/useSound";
 import Dialog from "../../common/Dialog";
 import { useTimer } from "../../../context/TimerContext";
+import i18n from "../../../locales/i18n";
 
 interface CrosswordGameProps {
   difficulty: Difficulty;
@@ -199,7 +200,7 @@ const CrosswordGame: React.FC<CrosswordGameProps> = ({
     const { row, col } = activeCell;
     const updatedBoard = getHint(board, row, col);
     setBoard(updatedBoard);
-    playSound("hint");
+    playSound("move");
     onMove();
 
     // Move to the next cell
@@ -274,13 +275,13 @@ const CrosswordGame: React.FC<CrosswordGameProps> = ({
       >
         <View style={styles.cluesContainer}>
           <ClueList
-            title="Across"
+            title={i18n.t("across")}
             clues={level.acrossClues}
             activeClue={activeClue}
             onCluePress={handleCluePress}
           />
           <ClueList
-            title="Down"
+            title={i18n.t("down")}
             clues={level.downClues}
             activeClue={activeClue}
             onCluePress={handleCluePress}
@@ -294,14 +295,14 @@ const CrosswordGame: React.FC<CrosswordGameProps> = ({
           ]}
         >
           <Button
-            title="Hint"
+            title={i18n.t("hint")}
             variant="outline"
             size="small"
             onPress={handleHint}
             style={styles.button}
           />
           <Button
-            title="Reset"
+            title={i18n.t("reset")}
             variant="outline"
             size="small"
             onPress={handleReset}
@@ -313,16 +314,16 @@ const CrosswordGame: React.FC<CrosswordGameProps> = ({
       {/* Reset confirmation dialog */}
       <Dialog
         visible={showResetDialog}
-        title="Reset Puzzle"
-        message="Are you sure you want to reset the puzzle? All progress will be lost."
+        title={i18n.t("resetPuzzleTitle")}
+        message={i18n.t("resetPuzzleMessage")}
         buttons={[
           {
-            text: "Cancel",
+            text: i18n.t("cancel"),
             onPress: () => setShowResetDialog(false),
             style: "cancel",
           },
           {
-            text: "Reset",
+            text: i18n.t("reset"),
             onPress: handleConfirmReset,
             style: "destructive",
           },
@@ -335,8 +336,10 @@ const CrosswordGame: React.FC<CrosswordGameProps> = ({
         <Animated.View
           style={[styles.completionMessage, { backgroundColor: pulseColor }]}
         >
-          <Text style={styles.completionText}>Puzzle Completed!</Text>
-          <Text style={styles.completionSubText}>Great job!</Text>
+          <Text style={styles.completionText}>{i18n.t("completionTitle")}</Text>
+          <Text style={styles.completionSubText}>
+            {i18n.t("completionMessage")}
+          </Text>
         </Animated.View>
       )}
     </View>

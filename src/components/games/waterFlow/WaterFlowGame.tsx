@@ -12,6 +12,7 @@ import {
 } from "./logic";
 import { useSound } from "../../../hooks/useSound";
 import { theme } from "../../../styles/theme";
+import i18n from "../../../locales/i18n";
 
 interface WaterFlowGameProps {
   difficulty: Difficulty;
@@ -142,8 +143,12 @@ const WaterFlowGame: React.FC<WaterFlowGameProps> = ({
       ]}
     >
       <View style={styles.gameInfo}>
-        <Text style={styles.difficultyText}>Difficulty: {difficulty}</Text>
-        <Text style={styles.movesText}>Moves: {movesCount}</Text>
+        <Text style={styles.difficultyText}>
+          {i18n.t("difficulty")}: {difficulty}
+        </Text>
+        <Text style={styles.movesText}>
+          {i18n.t("moves")}: {movesCount}
+        </Text>
       </View>
 
       <WaterFlowBoard board={board} onCellPress={handleCellPress} />
@@ -155,13 +160,13 @@ const WaterFlowGame: React.FC<WaterFlowGameProps> = ({
         ]}
       >
         <Button
-          title="New Level"
+          title={i18n.t("newLevel")}
           onPress={handleNewLevel}
           variant="primary"
           style={styles.button}
         />
         <Button
-          title="Hint"
+          title={i18n.t("hint")}
           onPress={handleHint}
           variant="secondary"
           style={styles.button}
@@ -181,9 +186,9 @@ const WaterFlowGame: React.FC<WaterFlowGameProps> = ({
             },
           ]}
         >
-          <Text style={styles.completionText}>Level Complete!</Text>
+          <Text style={styles.completionText}>{i18n.t("levelComplete")}</Text>
           <Text style={styles.completionSubText}>
-            You've connected the water flow in {movesCount} moves
+            {i18n.t("levelCompleteSubText")} {movesCount} {i18n.t("moves")}
           </Text>
         </Animated.View>
       )}

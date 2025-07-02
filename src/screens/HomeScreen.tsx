@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, memo, useMemo } from "react";
 import {
   View,
   Text,
@@ -31,6 +31,7 @@ import IconSpotDifference from "../assets/icons/IconSpotDifference";
 import IconWaterFlow from "../assets/icons/IconWaterFlow";
 import IconTrivia from "../assets/icons/IconTrivia";
 import IconRiddles from "../assets/icons/IconRiddles";
+import { useLocalization } from "../context/LocalizationContext";
 
 type GameNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
@@ -65,85 +66,12 @@ const getGameIcon = (gameType: GameType, size: number) => {
   }
 };
 
-// Memoize games array to prevent recreation
-const games: GameInfo[] = [
-  {
-    id: GameType.SUDOKU,
-    title: "Sudoku",
-    description: "Classic number puzzle",
-    color: theme.colors.primary,
-    implemented: true,
-  },
-  {
-    id: GameType.SLIDE_TILES,
-    title: "Slide Tiles",
-    description: "Arrange tiles in order",
-    color: theme.colors.accent,
-    implemented: true,
-  },
-  {
-    id: GameType.FLOW_FREE,
-    title: "Flow Free",
-    description: "Connect matching colors",
-    color: theme.colors.success,
-    implemented: true,
-  },
-  {
-    id: GameType.CROSSWORD,
-    title: "Crossword",
-    description: "Classic word puzzle",
-    color: theme.colors.secondary,
-    implemented: true,
-  },
-  {
-    id: GameType.WORDSEARCH,
-    title: "Word Search",
-    description: "Find hidden words",
-    color: theme.colors.primaryLight,
-    implemented: true,
-  },
-  {
-    id: GameType.MATCHSTICK,
-    title: "Matchstick",
-    description: "Visual logic puzzles with sticks",
-    color: theme.colors.secondary,
-    implemented: true,
-  },
-  {
-    id: GameType.SPOT_DIFFERENCE,
-    title: "Spot the Difference",
-    description: "Find differences between images",
-    color: theme.colors.error,
-    implemented: true,
-  },
-  {
-    id: GameType.WATER_FLOW,
-    title: "Water Flow",
-    description: "Guide water through pipes",
-    color: theme.colors.water,
-    implemented: true,
-  },
-  {
-    id: GameType.TRIVIA,
-    title: "Trivia",
-    description: "Test your knowledge",
-    color: theme.colors.success,
-    implemented: false,
-  },
-  {
-    id: GameType.RIDDLES,
-    title: "Riddles",
-    description: "Solve mind-bending riddles",
-    color: theme.colors.primary,
-    implemented: false,
-  },
-];
-
 const HomeScreen = () => {
   const navigation = useNavigation<GameNavigationProp>();
   const orientation = useOrientation();
   const { width } = useWindowDimensions();
   const { currentTheme } = useTheme();
+  const { t, locale } = useLocalization();
   const [showQuitDialog, setShowQuitDialog] = useState(false);
 
   const quitApp = useCallback(() => {
@@ -248,14 +176,89 @@ const HomeScreen = () => {
     [cardWidth, handleSelectGame, styles.gamesGrid]
   );
 
+  // Memoize games array to prevent recreation
+  const games: GameInfo[] = useMemo(
+    () => [
+      {
+        id: GameType.SUDOKU,
+        title: t("sudoku"),
+        description: t("sudokuDescription"),
+        color: theme.colors.primary,
+        implemented: true,
+      },
+      {
+        id: GameType.SLIDE_TILES,
+        title: t("slideTiles"),
+        description: t("slideTilesDescription"),
+        color: theme.colors.primary,
+        implemented: true,
+      },
+      {
+        id: GameType.FLOW_FREE,
+        title: t("flowFree"),
+        description: t("flowFreeDescription"),
+        color: theme.colors.success,
+        implemented: true,
+      },
+      {
+        id: GameType.CROSSWORD,
+        title: t("crossword"),
+        description: t("crosswordDescription"),
+        color: theme.colors.secondary,
+        implemented: true,
+      },
+      {
+        id: GameType.WORDSEARCH,
+        title: t("wordSearch"),
+        description: t("wordSearchDescription"),
+        color: theme.colors.primaryLight,
+        implemented: true,
+      },
+      {
+        id: GameType.MATCHSTICK,
+        title: t("matchstick"),
+        description: t("matchstickDescription"),
+        color: theme.colors.secondary,
+        implemented: true,
+      },
+      {
+        id: GameType.SPOT_DIFFERENCE,
+        title: t("spotDifference"),
+        description: t("spotDifferenceDescription"),
+        color: theme.colors.error,
+        implemented: true,
+      },
+      {
+        id: GameType.WATER_FLOW,
+        title: t("waterFlow"),
+        description: t("waterFlowDescription"),
+        color: theme.colors.water,
+        implemented: true,
+      },
+      {
+        id: GameType.TRIVIA,
+        title: t("trivia"),
+        description: t("triviaDescription"),
+        color: theme.colors.success,
+        implemented: false,
+      },
+      {
+        id: GameType.RIDDLES,
+        title: t("riddles"),
+        description: t("riddlesDescription"),
+        color: theme.colors.primary,
+        implemented: false,
+      },
+    ],
+    [t, locale, theme.colors]
+  );
+
   return (
     // <Animated.View style={[styles.container, animatedBackground]}>
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Puzzle World</Text>
-        <Text style={styles.subtitle}>
-          Challenge your brain with fun puzzles
-        </Text>
+        <Text style={styles.title}>{t("appTitle")}</Text>
+        <Text style={styles.subtitle}>{t("appSubtitle")}</Text>
       </View>
 
       <ScrollView
@@ -272,16 +275,16 @@ const HomeScreen = () => {
 
       <Dialog
         visible={showQuitDialog}
-        title="Quit Application"
-        message="Are you sure you want to quit the application?"
+        title={t("quitApplication")}
+        message={t("quitConfirmation")}
         buttons={[
           {
-            text: "Cancel",
+            text: t("cancel"),
             onPress: () => setShowQuitDialog(false),
             style: "cancel",
           },
           {
-            text: "Quit",
+            text: t("quit"),
             onPress: handleQuit,
             style: "destructive",
           },

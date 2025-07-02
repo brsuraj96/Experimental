@@ -20,6 +20,7 @@ import { theme } from "../../../styles/theme";
 import { useSound } from "../../../hooks/useSound";
 import { SlideTilesSettings } from "../../../types/settings";
 import { useTheme } from "../../../context/ThemeContext";
+import i18n from "../../../locales/i18n";
 
 // Extend SlideTilesSettings with additional properties needed for this component
 interface ExtendedSlideTilesSettings extends SlideTilesSettings {
@@ -212,7 +213,7 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
             <Text
               style={[styles.infoLabel, { color: currentTheme.colors.text }]}
             >
-              Moves
+              {i18n.t("moves")}
             </Text>
             <Text
               style={[styles.infoValue, { color: currentTheme.colors.text }]}
@@ -226,7 +227,7 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
               <Text
                 style={[styles.infoLabel, { color: currentTheme.colors.text }]}
               >
-                Time
+                {i18n.t("time")}
               </Text>
               <Text
                 style={[styles.infoValue, { color: currentTheme.colors.text }]}
@@ -241,7 +242,7 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
               <Text
                 style={[styles.infoLabel, { color: currentTheme.colors.text }]}
               >
-                Size
+                {i18n.t("size")}
               </Text>
               <Text
                 style={[styles.infoValue, { color: currentTheme.colors.text }]}
@@ -254,7 +255,7 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
 
         {settings.completionRate && gameStarted && (
           <View style={styles.completionContainer}>
-            <Text style={styles.completionLabel}>Completion</Text>
+            <Text style={styles.completionLabel}>{i18n.t("completion")}</Text>
             <View style={styles.progressBarContainer}>
               <View
                 style={[
@@ -292,7 +293,7 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
             <Text
               style={[styles.scoreLabel, { color: currentTheme.colors.text }]}
             >
-              Score
+              {i18n.t("score")}
             </Text>
             <Text
               style={[styles.scoreValue, { color: currentTheme.colors.text }]}
@@ -303,11 +304,9 @@ const SlideTilesGame: React.FC<SlideTilesGameProps> = ({
         )}
 
         <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsTitle}>How to Play:</Text>
+          <Text style={styles.instructionsTitle}>{i18n.t("howToPlay")}:</Text>
           <Text style={styles.instructionsText}>
-            Rearrange the tiles by sliding them into the empty space to form the
-            original numbered sequence. The empty space should be in the bottom
-            right corner.
+            {i18n.t("rearrangeTiles")}
           </Text>
         </View>
       </View>

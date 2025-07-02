@@ -5,6 +5,7 @@ import { Difficulty } from "../../../types";
 import Timer from "../../common/Timer";
 import CustomDropdown from "../../common/CustomDropdown";
 import { useTheme } from "../../../context/ThemeContext";
+import { useLocalization } from "../../../context/LocalizationContext";
 import { SudokuSettings } from "../../../types/settings";
 import { useSound, SoundType } from "../../../hooks/useSound";
 import ScorePopup from "../../common/ScorePopup";
@@ -52,6 +53,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   onResume,
 }) => {
   const { currentTheme } = useTheme();
+  const { t, locale } = useLocalization();
   const { playSound } = useSound();
   const scoreAnimation = useRef(new Animated.Value(previousScore || 0)).current;
   const progressAnimation = useRef(new Animated.Value(0)).current;
@@ -106,17 +108,20 @@ const GameHeader: React.FC<GameHeaderProps> = ({
 
   // Function to show score popup
   const showScorePopup = useCallback((points: number) => {
-    if (!scoreContainerRef.current) return;
-
-    scoreContainerRef.current.measure((x, y, width, height, pageX, pageY) => {
-      const newPopup = {
-        id: popupIdCounter.current++,
-        score: points,
-        x: width / 2,
-        y: height / 2,
-      };
-      setScorePopups((prev) => [...prev, newPopup]);
-    });
+    if (
+      scoreContainerRef.current &&
+      typeof scoreContainerRef.current.measure === "function"
+    ) {
+      scoreContainerRef.current.measure((x, y, width, height, pageX, pageY) => {
+        const newPopup = {
+          id: popupIdCounter.current++,
+          score: points,
+          x: width / 2,
+          y: height / 2,
+        };
+        setScorePopups((prev) => [...prev, newPopup]);
+      });
+    }
   }, []);
 
   // Show popup for significant score changes
@@ -151,11 +156,13 @@ const GameHeader: React.FC<GameHeaderProps> = ({
     [navigation, gameType]
   );
 
-  const difficultyOptions: DropdownOption<Difficulty>[] = difficulties.map(
-    (diff) => ({
-      label: diff,
-      value: diff,
-    })
+  const difficultyOptions: DropdownOption<Difficulty>[] = React.useMemo(
+    () =>
+      difficulties.map((diff) => ({
+        label: t(diff.toLowerCase(), { defaultValue: diff }),
+        value: diff,
+      })),
+    [t, locale]
   );
 
   // Add effect to handle pause state when dropdown opens/closes
@@ -221,7 +228,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
             </View>
           ) : (
             <Text style={[styles.value, { color: currentTheme.colors.text }]}>
-              {difficulty}
+              {t(difficulty.toLowerCase(), { defaultValue: difficulty })}
             </Text>
           )}
         </View>

@@ -15,11 +15,11 @@ export enum GameType {
 }
 
 export enum Difficulty {
-  BEGINNER = "BEGINNER",
-  EASY = "EASY",
-  MEDIUM = "MEDIUM",
-  HARD = "HARD",
-  EXPERT = "EXPERT",
+  BEGINNER = "Beginner",
+  EASY = "Easy",
+  MEDIUM = "Medium",
+  HARD = "Hard",
+  EXPERT = "Expert",
 }
 
 export type Orientation = "landscape" | "portrait";

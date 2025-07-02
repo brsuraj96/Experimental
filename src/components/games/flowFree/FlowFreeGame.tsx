@@ -10,6 +10,7 @@ import {
 } from "./logic";
 import { theme } from "../../../styles/theme";
 import { useSound } from "../../../hooks/useSound";
+import i18n from "../../../locales/i18n";
 
 interface FlowFreeGameProps {
   difficulty: Difficulty;
@@ -192,10 +193,10 @@ const FlowFreeGame: React.FC<FlowFreeGameProps> = ({
   const handleReset = () => {
     playSound("click");
 
-    Alert.alert("Reset Level", "Are you sure you want to reset this level?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(i18n.t("resetLevel"), i18n.t("resetLevelConfirm"), [
+      { text: i18n.t("cancel"), style: "cancel" },
       {
-        text: "Reset",
+        text: i18n.t("reset"),
         onPress: () => {
           initializeBoard(level);
         },

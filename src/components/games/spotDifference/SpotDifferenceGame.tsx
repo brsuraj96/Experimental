@@ -9,6 +9,7 @@ import { generateSpotDifferenceLevel } from "./spotDifferenceGenerator";
 import { theme } from "../../../styles/theme";
 import { useSound } from "../../../hooks/useSound";
 import SpotDifferenceImage from "./SpotDifferenceImage";
+import i18n from "../../../locales/i18n";
 
 interface SpotDifferenceGameProps {
   difficulty: Difficulty;
@@ -112,9 +113,11 @@ const SpotDifferenceGame: React.FC<SpotDifferenceGameProps> = ({
     <View style={styles.container}>
       <View style={styles.progressContainer}>
         <Text style={styles.progressText}>
-          Found: {foundDifferences}/{level.differences.length}
+          {i18n.t("found")}: {foundDifferences}/{level.differences.length}
         </Text>
-        <Text style={styles.progressText}>Wrong Attempts: {wrongAttempts}</Text>
+        <Text style={styles.progressText}>
+          {i18n.t("wrongAttempts")}: {wrongAttempts}
+        </Text>
       </View>
 
       <View style={styles.imagesContainer}>
@@ -135,9 +138,7 @@ const SpotDifferenceGame: React.FC<SpotDifferenceGameProps> = ({
         />
       </View>
 
-      <Text style={styles.instructionText}>
-        Tap on the differences between the two images
-      </Text>
+      <Text style={styles.instructionText}>{i18n.t("tapDifferences")}</Text>
     </View>
   );
 };

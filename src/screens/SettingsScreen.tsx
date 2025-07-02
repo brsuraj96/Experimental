@@ -12,6 +12,7 @@ import {
 import { FontAwesome5 } from "@expo/vector-icons";
 import Header from "../components/common/Header";
 import Dialog from "../components/common/Dialog";
+import { useLocalization } from "../context/LocalizationContext";
 import { useTheme } from "../context/ThemeContext";
 import { useSettings } from "../context/SettingsContext";
 import { NavigationProp } from "@react-navigation/native";
@@ -26,7 +27,6 @@ import {
   Language,
   FontSize,
 } from "../types/settings";
-import { Theme } from "../styles/theme";
 import CustomDropdown from "../components/common/CustomDropdown";
 
 // Define the DropdownOption type locally since it's not exported from CustomDropdown
@@ -211,6 +211,7 @@ const SettingItemComponent: React.FC<
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { currentTheme } = useTheme();
+  const { t, locale, setLocale, availableLocales } = useLocalization();
   const {
     baseSettings,
     gameSettings,
@@ -229,6 +230,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 
   const handleSettingChange = useCallback(
     (key: SettingKey, value: boolean | Language | FontSize) => {
+      if (key === "language") {
+        setLocale(value as Language); // update i18next language immediately
+      }
       if (currentGameType) {
         const currentGameSettings = gameSettings[currentGameType];
         updateGameSettings(currentGameType, {
@@ -248,6 +252,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       baseSettings,
       updateGameSettings,
       updateBaseSettings,
+      setLocale,
     ]
   );
 
@@ -255,121 +260,140 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const settingSections = useMemo<SettingSection[]>(
     () => [
       {
-        title: "General Settings",
+        title: t("generalSettings"),
         items: [
           {
             type: "toggle" as const,
             key: "audioEffect" as SettingKey,
-            label: "Sound Effects",
+            label: t("soundEffects"),
             icon: "volume-up",
           },
           {
             type: "toggle" as const,
             key: "vibration" as SettingKey,
-            label: "Vibration",
+            label: t("vibration"),
             icon: "mobile-alt",
           },
           {
             type: "toggle" as const,
             key: "darkMode" as SettingKey,
-            label: "Dark Mode",
+            label: t("darkMode"),
             icon: "moon",
           },
           {
             type: "option" as const,
             key: "fontSize" as keyof BaseSettings,
-            label: "Font Size",
+            label: t("fontSize"),
             icon: "text-height",
             options: [
-              { label: "Small", value: "small" as FontSize },
-              { label: "Medium", value: "medium" as FontSize },
-              { label: "Large", value: "large" as FontSize },
+              { label: t("small"), value: "small" as FontSize },
+              { label: t("medium"), value: "medium" as FontSize },
+              { label: t("large"), value: "large" as FontSize },
             ],
           },
           {
             type: "option" as const,
             key: "language" as keyof BaseSettings,
-            label: "Language",
+            label: t("language"),
             icon: "language",
-            options: [
-              { label: "English", value: "en" as Language },
-              { label: "Spanish", value: "es" as Language },
-              { label: "French", value: "fr" as Language },
-            ],
+            // options: [
+            //   { label: t("english"), value: "en" as Language },
+            //   { label: t("spanish"), value: "es" as Language },
+            //   { label: t("french"), value: "fr" as Language },
+            //   { label: t("german"), value: "de" as Language },
+            //   { label: t("chinese"), value: "zh" as Language },
+            //   { label: t("hindi"), value: "hi" as Language },
+            //   { label: t("arabic"), value: "ar" as Language },
+            //   { label: t("russian"), value: "ru" as Language },
+            //   { label: t("japanese"), value: "ja" as Language },
+            //   { label: t("portuguese"), value: "pt" as Language },
+            //   { label: t("italian"), value: "it" as Language },
+            //   { label: t("korean"), value: "ko" as Language },
+            //   { label: t("turkish"), value: "tr" as Language },
+            //   { label: t("polish"), value: "pl" as Language },
+            //   { label: t("dutch"), value: "nl" as Language },
+            //   { label: t("swedish"), value: "sv" as Language },
+            // ],
+            options: availableLocales.map((locale) => ({
+              label: locale.label,
+              value: locale.code as Language,
+            })),
           },
         ],
       },
       {
-        title: "Game Settings",
+        title: t("Game Settings"),
         items: [
           {
             type: "toggle" as const,
             key: "timer" as SettingKey,
-            label: "Timer",
+            label: t("timer"),
             icon: "clock",
           },
           {
             type: "toggle" as const,
             key: "smartHint" as SettingKey,
-            label: "Show Hints",
+            label: t("smartHint"),
             icon: "lightbulb",
           },
           {
             type: "toggle" as const,
             key: "showScore" as SettingKey,
-            label: "Show Score",
+            label: t("showScore"),
             icon: "star",
           },
           {
             type: "toggle" as const,
             key: "showProgress" as SettingKey,
-            label: "Show Progress",
+            label: t("showProgress"),
             icon: "chart-line",
           },
         ],
       },
       {
-        title: "Sudoku Settings",
+        title: t("Sudoku Settings"),
         items: [
           {
             type: "toggle" as const,
             key: "mistakeLimit" as SettingKey,
-            label: "Mistake Limit",
+            label: t("mistakeLimit"),
             icon: "exclamation-circle",
-            description: "You will lose the game if you make 3 mistakes",
+            description: t("You will lose the game if you make 3 mistakes"),
           },
           {
             type: "toggle" as const,
             key: "numberFirst" as SettingKey,
-            label: "Number First",
+            label: t("Number First"),
             icon: "hand-point-up",
-            description:
-              "Long press a number to lock it, then use it to fill multiple cells",
+            description: t(
+              "Long press a number to lock it, then use it to fill multiple cells"
+            ),
           },
           {
             type: "toggle" as const,
             key: "highlightPeer" as SettingKey,
-            label: "Highlight Peer",
+            label: t("Highlight Peer"),
             icon: "th",
-            description:
-              "Highlight the row, column and block of the selected cell",
+            description: t(
+              "Highlight the row, column and block of the selected cell"
+            ),
           },
           {
             type: "toggle" as const,
             key: "highlightSameNumbers" as SettingKey,
-            label: "Highlight Same Numbers",
+            label: t("Highlight Same Numbers"),
             icon: "equals",
           },
           {
             type: "toggle" as const,
             key: "autoRemoveNotes" as SettingKey,
-            label: "Auto Remove Notes",
+            label: t("Auto Remove Notes"),
             icon: "eraser",
           },
           {
             type: "toggle" as const,
             key: "remainingNumbers" as SettingKey,
-            label: "Remaining Numbers",
+            label: t("Remaining Numbers"),
             icon: "list-ol",
           },
           // {
@@ -393,25 +417,30 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         ],
       },
       {
-        title: "Support and Others",
+        title: t("Support and Others"),
         items: [
           {
             key: "HelpCenter",
-            label: "Help Center",
+            label: t("Help Center"),
             icon: "question-circle",
             type: "link",
           },
-          { key: "About", label: "About", icon: "info-circle", type: "link" },
+          {
+            key: "About",
+            label: t("About"),
+            icon: "info-circle",
+            type: "link",
+          },
           {
             key: "quit",
-            label: "Quit",
+            label: t("Quit"),
             icon: "power-off",
             type: "link",
           },
         ],
       },
     ],
-    []
+    [t, locale, availableLocales]
   );
 
   const quitApp = useCallback(() => {
@@ -478,7 +507,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       }}
     >
       <Header
-        title="Settings"
+        title={t("settings")}
         showBackButton
         onBack={() => navigation.goBack()}
         settings={{ ...currentSettings, timer: false }}
@@ -540,16 +569,16 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       </ScrollView>
       <Dialog
         visible={showQuitDialog}
-        title="Quit Application"
-        message="Are you sure you want to quit the application?"
+        title={t("quitApplication")}
+        message={t("quitConfirmation")}
         buttons={[
           {
-            text: "Cancel",
+            text: t("cancel"),
             onPress: () => setShowQuitDialog(false),
             style: "cancel",
           },
           {
-            text: "Quit",
+            text: t("quit"),
             onPress: handleQuit,
             style: "destructive",
           },
