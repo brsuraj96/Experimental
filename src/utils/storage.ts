@@ -1,8 +1,10 @@
 import { Platform } from "react-native";
 import { GameProgress, GameType, Difficulty } from "../types";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STORAGE_KEYS = {
   GAME_PROGRESS: "puzzle_world_progress",
+  AUTOSAVE_STATE: "puzzle_world_autosave_state",
 };
 
 // Default progress structure
@@ -86,11 +88,8 @@ const storage = {
     if (Platform.OS === "web") {
       return localStorage.getItem(key);
     }
-
-    // For native platforms, we'd use AsyncStorage
-    // For now, just return null in development
-    console.log("[Storage] Would get item with key:", key);
-    return null;
+    // Native: use AsyncStorage
+    return await AsyncStorage.getItem(key);
   },
 
   setItem: async (key: string, value: string): Promise<void> => {
@@ -98,10 +97,17 @@ const storage = {
       localStorage.setItem(key, value);
       return;
     }
+    // Native: use AsyncStorage
+    await AsyncStorage.setItem(key, value);
+  },
 
-    // For native platforms, we'd use AsyncStorage
-    // For now, just log in development
-    console.log("[Storage] Would save item with key:", key);
+  removeItem: async (key: string): Promise<void> => {
+    if (Platform.OS === "web") {
+      localStorage.removeItem(key);
+      return;
+    }
+    // Native: use AsyncStorage
+    await AsyncStorage.removeItem(key);
   },
 };
 
@@ -153,5 +159,79 @@ export const updateLevelProgress = async (
     }
   } catch (error) {
     console.error("Error updating level progress:", error);
+  }
+};
+
+/**
+ * Save autosave state locally with timestamp
+ */
+export const saveAutosaveState = async (state: any): Promise<void> => {
+  try {
+    const saveObj = {
+      state,
+      timestamp: Date.now(),
+    };
+    const jsonValue = JSON.stringify(saveObj);
+    await storage.setItem(STORAGE_KEYS.AUTOSAVE_STATE, jsonValue);
+    console.log("[Autosave] Saved state:", saveObj);
+  } catch (error) {
+    console.error("Error saving autosave state:", error);
+  }
+};
+
+/**
+ * Load autosave state from local storage
+ */
+export const loadAutosaveState = async (): Promise<{
+  state: any;
+  timestamp: number;
+} | null> => {
+  try {
+    console.log("[Autosave] Loading autosave state from storage");
+    const jsonValue = await storage.getItem(STORAGE_KEYS.AUTOSAVE_STATE);
+    if (jsonValue !== null) {
+      const parsed = JSON.parse(jsonValue);
+      return parsed;
+    }
+    console.log("[Autosave] No autosave state found in storage");
+    return null;
+  } catch (error) {
+    console.error("Error loading autosave state:", error);
+    return null;
+  }
+};
+
+/**
+ * Stub: Upload autosave state to cloud (implement with your backend/Firebase/Supabase)
+ */
+export const uploadAutosaveStateToCloud = async (
+  userId: string,
+  state: any
+): Promise<void> => {
+  // TODO: Implement API call to upload state
+  console.log(`[CloudSync] Would upload autosave for user ${userId}`);
+};
+
+/**
+ * Stub: Download autosave state from cloud (implement with your backend/Firebase/Supabase)
+ */
+export const downloadAutosaveStateFromCloud = async (
+  userId: string
+): Promise<{ state: any; timestamp: number } | null> => {
+  // TODO: Implement API call to download state
+  console.log(`[CloudSync] Would download autosave for user ${userId}`);
+  return null;
+};
+
+/**
+ * Clear autosave state from local storage
+ */
+export const clearAutosaveState = async (): Promise<void> => {
+  try {
+    console.log("[Autosave] Clearing autosave state");
+    await storage.removeItem(STORAGE_KEYS.AUTOSAVE_STATE);
+    console.log("[Autosave] Cleared autosave state successfully");
+  } catch (error) {
+    console.error("Error clearing autosave state:", error);
   }
 };

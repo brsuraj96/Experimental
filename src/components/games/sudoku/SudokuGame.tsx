@@ -6,7 +6,13 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import { View, StyleSheet, Alert, Vibration } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  Vibration,
+  ActivityIndicator,
+} from "react-native";
 import {
   Difficulty,
   GameType,
@@ -27,6 +33,14 @@ import { useSound } from "../../../hooks/useSound";
 import GameHeader from "./GameHeader";
 import { ScoreManager } from "../../../utils/scoring";
 import { deepClone } from "../../../utils/helpers";
+import {
+  saveAutosaveState,
+  loadAutosaveState,
+  uploadAutosaveStateToCloud,
+  downloadAutosaveStateFromCloud,
+  clearAutosaveState,
+} from "../../../utils/storage";
+import FullScreenPrompt from "../../common/FullScreenPrompt";
 
 interface SudokuGameProps {
   difficulty: Difficulty;
@@ -39,6 +53,7 @@ interface SudokuGameProps {
   isPaused?: boolean;
   onPause?: () => void;
   onResume?: () => void;
+  skipRestoreOnMount?: boolean;
 }
 
 const SUDOKU_MISTAKE_LIMIT = 3;
@@ -47,6 +62,8 @@ const SUDOKU_MISTAKE_LIMIT = 3;
 export interface SudokuGameHandle {
   restart: () => void;
 }
+
+const AUTOSAVE_INTERVAL = 10000; // 10 seconds
 
 const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
   (
@@ -61,6 +78,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
       isPaused = false,
       onPause,
       onResume,
+      skipRestoreOnMount,
     },
     ref
   ) => {
@@ -111,6 +129,206 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
     const [correctStreak, setCorrectStreak] = useState(0);
     const scoreManager = useRef(new ScoreManager(GameType.SUDOKU, difficulty));
     const [isPausing, setIsPausing] = useState(false);
+    const [showContinueDialog, setShowContinueDialog] = useState(false);
+    const [pendingRestoreState, setPendingRestoreState] = useState<any>(null);
+    const [hasCheckedAutosave, setHasCheckedAutosave] = useState(false);
+    const [restoredFromSave, setRestoredFromSave] = useState(false);
+    const [isGameActive, setIsGameActive] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    // Placeholder: get userId from context or props if available
+    const userId = null; // Replace with actual user id if signed in
+
+    // --- AUTOSAVE/RESTORE LOGIC ---
+    // Serialize current game state
+    const getCurrentGameState = useCallback(
+      () => ({
+        initialBoard,
+        board,
+        selectedCell,
+        selectedNumber,
+        lockedNumber,
+        isNoteMode,
+        history,
+        remainingNumbers,
+        mistakes,
+        score,
+        previousScore,
+        correctStreak,
+        isPausing,
+        timer,
+        difficulty,
+        settings,
+      }),
+      [
+        initialBoard,
+        board,
+        selectedCell,
+        selectedNumber,
+        lockedNumber,
+        isNoteMode,
+        history,
+        remainingNumbers,
+        mistakes,
+        score,
+        previousScore,
+        correctStreak,
+        isPausing,
+        timer,
+        difficulty,
+        settings,
+      ]
+    );
+
+    // Restore game state from saved object (robust: set all values atomically)
+    const restoreGameState = useCallback(
+      (saved: any) => {
+        if (!saved) return;
+        // Set all state in a single batch to avoid partial updates
+        const restoreDifficulty = difficulty;
+        setInitialBoard(
+          saved.initialBoard || generateSudoku(restoreDifficulty)
+        );
+        setBoard(saved.board || generateSudoku(restoreDifficulty));
+        setSelectedCell(saved.selectedCell ?? null);
+        setSelectedNumber(saved.selectedNumber ?? null);
+        setLockedNumber(saved.lockedNumber ?? null);
+        setIsNoteMode(saved.isNoteMode ?? false);
+        setHistory(
+          saved.history ?? [
+            {
+              board: deepClone(
+                saved.initialBoard || generateSudoku(restoreDifficulty)
+              ),
+              selected: null,
+            },
+          ]
+        );
+        setRemainingNumbers(saved.remainingNumbers ?? Array(9).fill(9));
+        setMistakes(saved.mistakes ?? 0);
+        setScore(saved.score ?? 0);
+        if (scoreManager.current && typeof saved.score === "number") {
+          scoreManager.current.setScore(saved.score);
+        }
+        setPreviousScore(saved.previousScore ?? 0);
+        setCorrectStreak(saved.correctStreak ?? 0);
+        setIsPausing(saved.isPausing ?? false);
+        // If the restored difficulty is different, update parent
+        // if (saved.difficulty && saved.difficulty !== difficulty) {
+        //   onDifficultyChange(saved.difficulty);
+        // }
+        // Timer and settings handled elsewhere
+      },
+      [difficulty]
+    );
+
+    // Autosave effect (every AUTOSAVE_INTERVAL ms)
+    useEffect(() => {
+      if (!isGameActive) return;
+      const interval = setInterval(() => {
+        const state = getCurrentGameState();
+        saveAutosaveState(state);
+        if (userId) {
+          uploadAutosaveStateToCloud(userId, state);
+        }
+      }, AUTOSAVE_INTERVAL);
+      return () => clearInterval(interval);
+    }, [getCurrentGameState, userId, isGameActive]);
+
+    // Autosave on every move
+    useEffect(() => {
+      if (!isGameActive) return;
+      const state = getCurrentGameState();
+      saveAutosaveState(state);
+      if (userId) {
+        uploadAutosaveStateToCloud(userId, state);
+      }
+    }, [
+      board,
+      selectedCell,
+      selectedNumber,
+      lockedNumber,
+      isNoteMode,
+      history,
+      mistakes,
+      score,
+      previousScore,
+      correctStreak,
+      isPausing,
+      timer,
+      userId,
+      getCurrentGameState,
+      isGameActive,
+    ]);
+
+    // Modified restore on mount: only prompt if saved state exists
+    useEffect(() => {
+      let isMounted = true;
+      (async () => {
+        // Only check for saved state if NOT a difficulty change (skipRestoreOnMount is false or undefined)
+        if (skipRestoreOnMount) {
+          setHasCheckedAutosave(true);
+          setIsLoading(false);
+          return;
+        }
+
+        let restored = null;
+        let restoredFromCloud = null;
+        if (userId) {
+          restoredFromCloud = await downloadAutosaveStateFromCloud(userId);
+          if (restoredFromCloud && restoredFromCloud.state) {
+            restored = restoredFromCloud;
+            console.log("[Restore] Downloaded state:", restored);
+          }
+        }
+        if (!restored) {
+          const localRestored = await loadAutosaveState();
+          if (localRestored && localRestored.state) {
+            restored = localRestored;
+            console.log("[Restore] Loaded state:", restored);
+          }
+        }
+        // Show dialog if we have valid state and it's not empty (regardless of difficulty)
+        if (
+          restored &&
+          isMounted &&
+          restored.state &&
+          restored.state.board &&
+          restored.state.initialBoard &&
+          restored.state.difficulty === difficulty
+        ) {
+          setPendingRestoreState(restored.state);
+          setShowContinueDialog(true);
+          setIsGameActive(false);
+          console.log("[Restore] Showing continue dialog");
+        }
+        setHasCheckedAutosave(true);
+        setIsLoading(false);
+      })();
+      return () => {
+        isMounted = false;
+      };
+    }, [userId, skipRestoreOnMount]);
+
+    // Only initialize a new game if not restoring and prompt is closed
+    useEffect(() => {
+      if (!hasCheckedAutosave || showContinueDialog || restoredFromSave) return;
+
+      const newBoard = generateSudoku(difficulty);
+      const cloned = deepClone(newBoard);
+      setInitialBoard(cloned);
+      setBoard(cloned);
+      setSelectedCell(null);
+      setSelectedNumber(null);
+      setLockedNumber(null);
+      setHistory([{ board: cloned, selected: null }]);
+      setMistakes(0);
+      setCorrectStreak(0);
+      setScore(0);
+      setPreviousScore(0);
+      setIsPausing(false);
+      scoreManager.current = new ScoreManager(GameType.SUDOKU, difficulty);
+      reset();
+    }, [difficulty, hasCheckedAutosave, showContinueDialog, restoredFromSave]);
 
     // Use settings to control mistake limit
     useEffect(() => {
@@ -130,17 +348,20 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
 
     // Initialize the game when difficulty changes
     useEffect(() => {
+      // If skipRestoreOnMount is true, this is a difficulty change: always start a new game, don't check for saved state
       const newBoard = generateSudoku(difficulty);
-      setInitialBoard(deepClone(newBoard));
-      setBoard(deepClone(newBoard));
+      const cloned = deepClone(newBoard);
+      setInitialBoard(cloned);
+      setBoard(cloned);
       setSelectedCell(null);
       setSelectedNumber(null);
       setLockedNumber(null);
-      setHistory([{ board: deepClone(newBoard), selected: null }]);
+      setHistory([{ board: cloned, selected: null }]);
       setMistakes(0);
       reset();
       setIsPausing(false);
       scoreManager.current = new ScoreManager(GameType.SUDOKU, difficulty);
+      setIsGameActive(true); // Ensure autosave runs after difficulty change
     }, [difficulty]);
 
     // Resume game state when unpausing
@@ -704,6 +925,58 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
         maxWidth: 300,
       },
     });
+
+    // Handler for dialog actions
+    const handleContinue = () => {
+      if (pendingRestoreState) {
+        setRestoredFromSave(true);
+        // Restore all state atomically
+        restoreGameState(pendingRestoreState);
+        // Restore timer if present
+        if (typeof pendingRestoreState.timer === "number") {
+          reset(pendingRestoreState.timer);
+        }
+      }
+      setShowContinueDialog(false);
+      setIsGameActive(true);
+    };
+    const handleNewGame = async () => {
+      await clearAutosaveState();
+      setShowContinueDialog(false);
+      setRestoredFromSave(false);
+      setIsGameActive(true);
+      // New game will be initialized by the effect above
+    };
+
+    // Show loader while loading saved progress
+    if (isLoading) {
+      return (
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "#00000010",
+          }}
+        >
+          <ActivityIndicator size="large" color="#A78BFA" />
+        </View>
+      );
+    }
+
+    // Only render the prompt if it's visible, block all game UI
+    if (showContinueDialog) {
+      return (
+        <FullScreenPrompt
+          visible={showContinueDialog}
+          title="Continue your last game?"
+          message="We found a saved game. Would you like to continue where you left off or start a new game?"
+          onContinue={handleContinue}
+          onNewGame={handleNewGame}
+        />
+      );
+    }
+
     return (
       <View
         style={[styles.container, isLandscape && styles.landscapeContainer]}

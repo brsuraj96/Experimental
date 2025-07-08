@@ -32,6 +32,7 @@ import IconWaterFlow from "../assets/icons/IconWaterFlow";
 import IconTrivia from "../assets/icons/IconTrivia";
 import IconRiddles from "../assets/icons/IconRiddles";
 import { useLocalization } from "../context/LocalizationContext";
+import { loadAutosaveState } from "../utils/storage";
 
 type GameNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
@@ -88,11 +89,22 @@ const HomeScreen = () => {
   }, [quitApp]);
 
   const handleSelectGame = useCallback(
-    (game: GameInfo) => {
+    async (game: GameInfo) => {
       if (game.implemented) {
+        let difficultyToUse = Difficulty.EASY;
+        if (game.id === GameType.SUDOKU) {
+          try {
+            const saved = await loadAutosaveState();
+            if (saved && saved.state && saved.state.difficulty) {
+              difficultyToUse = saved.state.difficulty;
+            }
+          } catch (e) {
+            // ignore, fallback to EASY
+          }
+        }
         navigation.navigate("Game", {
           gameType: game.id,
-          difficulty: Difficulty.EASY,
+          difficulty: difficultyToUse,
         });
       }
     },
@@ -153,27 +165,6 @@ const HomeScreen = () => {
         },
       }),
     [currentTheme.colors]
-  );
-
-  // Memoize game cards rendering
-  const renderGameCards = useCallback(
-    () => (
-      <View style={styles.gamesGrid}>
-        {games.map((game) => (
-          <MemoizedGameCard
-            key={game.id}
-            title={game.title}
-            description={game.description}
-            color={game.color}
-            icon={getGameIcon(game.id, 50)}
-            width={cardWidth}
-            onPress={() => handleSelectGame(game)}
-            implemented={game.implemented}
-          />
-        ))}
-      </View>
-    ),
-    [cardWidth, handleSelectGame, styles.gamesGrid]
   );
 
   // Memoize games array to prevent recreation
@@ -251,6 +242,31 @@ const HomeScreen = () => {
       },
     ],
     [t, locale, theme.colors]
+  );
+
+  // Memoize game cards rendering
+  const renderGameCards = useCallback(
+    () => (
+      <View style={styles.gamesGrid}>
+        {games.map((game) => (
+          <MemoizedGameCard
+            key={game.id}
+            title={game.title}
+            description={game.description}
+            color={game.color}
+            icon={getGameIcon(game.id, 50)}
+            width={cardWidth}
+            onPress={
+              game.id === GameType.SUDOKU
+                ? () => handleSelectGame(game)
+                : () => handleSelectGame(game)
+            }
+            implemented={game.implemented}
+          />
+        ))}
+      </View>
+    ),
+    [cardWidth, handleSelectGame, styles.gamesGrid, games]
   );
 
   return (

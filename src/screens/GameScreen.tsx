@@ -136,6 +136,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   const windowDimensions = useWindowDimensions();
   const isLandscape = windowDimensions.width > windowDimensions.height;
   const { t, locale } = useLocalization();
+  const [skipRestoreOnMount, setSkipRestoreOnMount] = useState(false);
 
   // Consolidate game state into a single object
   const [gameState, setGameState] = useState({
@@ -311,6 +312,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
 
   const handleDifficultyChange = useCallback(
     (newDifficulty: Difficulty) => {
+      setSkipRestoreOnMount(true);
       handlePause();
       navigation.replace("Game", {
         gameType,
@@ -335,6 +337,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
         return {
           ...baseProps,
           onDifficultyChange: handleDifficultyChange,
+          skipRestoreOnMount: skipRestoreOnMount,
           onPause: handlePause,
           onResume: handleResume,
         };

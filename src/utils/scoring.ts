@@ -419,4 +419,8 @@ export class ScoreManager {
       multiplier: this.config.difficultyMultiplier[this.difficulty],
     };
   }
+
+  public setScore(newScore: number): void {
+    this.currentScore = newScore;
+  }
 }
