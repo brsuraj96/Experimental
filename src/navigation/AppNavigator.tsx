@@ -5,6 +5,8 @@ import HomeScreen from "../screens/HomeScreen";
 import GameScreen from "../screens/GameScreen";
 import CompletionScreen from "../screens/CompletionScreen";
 import SettingsScreen from "screens/SettingsScreen";
+import AboutScreen from "../screens/AboutScreen";
+import FeedbackScreen from "../screens/FeedbackScreen";
 import { useTheme } from "../context/ThemeContext";
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -32,6 +34,8 @@ const AppNavigator = () => {
       <Stack.Screen name="Game" component={GameScreen} />
       <Stack.Screen name="Completion" component={CompletionScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="About" component={AboutScreen} />
+      <Stack.Screen name="HelpCenter" component={FeedbackScreen} />
     </Stack.Navigator>
   );
 };

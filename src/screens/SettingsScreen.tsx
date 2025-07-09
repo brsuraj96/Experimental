@@ -15,7 +15,7 @@ import Dialog from "../components/common/Dialog";
 import { useLocalization } from "../context/LocalizationContext";
 import { useTheme } from "../context/ThemeContext";
 import { useSettings } from "../context/SettingsContext";
-import { NavigationProp } from "@react-navigation/native";
+import { NavigationProp, useFocusEffect } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
 import {
   BaseSettings,
@@ -420,6 +420,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         title: t("Support and Others"),
         items: [
           {
+            key: "HowToPlay",
+            label: t("How To Play"),
+            icon: "file-alt",
+            type: "link",
+          },
+          {
             key: "HelpCenter",
             label: t("Help Center"),
             icon: "question-circle",
@@ -486,6 +492,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           item.onPress();
         } else if (item.key === "quit") {
           setShowQuitDialog(true);
+        } else if (item.key === "HelpCenter") {
+          navigation.navigate("HelpCenter");
         } else {
           const route = item.key as Exclude<
             keyof RootStackParamList,
@@ -496,6 +504,21 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       }
     },
     [navigation]
+  );
+
+  // Fix: Only navigate back on hardware back press, do not show exit dialog
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        navigation.goBack();
+        return true;
+      };
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
+      return () => backHandler.remove();
+    }, [navigation])
   );
 
   return (
