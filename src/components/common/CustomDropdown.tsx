@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+} from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
 import { Theme } from "../../styles/theme";
@@ -125,28 +132,35 @@ const CustomDropdown = <T extends string>({
           onPress={() => setIsOpen(false)}
         >
           <View style={themedStyles.dropdownContainer}>
-            {options.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  themedStyles.option,
-                  option.value === value && themedStyles.selectedOption,
-                ]}
-                onPress={() => {
-                  onValueChange(option.value);
-                  setIsOpen(false);
-                }}
-              >
-                <Text
+            <ScrollView
+              style={{ maxHeight: 240 }}
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={{ flexGrow: 1 }}
+              keyboardShouldPersistTaps="handled"
+            >
+              {options.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
                   style={[
-                    themedStyles.optionText,
-                    option.value === value && themedStyles.selectedOptionText,
+                    themedStyles.option,
+                    option.value === value && themedStyles.selectedOption,
                   ]}
+                  onPress={() => {
+                    onValueChange(option.value);
+                    setIsOpen(false);
+                  }}
                 >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      themedStyles.optionText,
+                      option.value === value && themedStyles.selectedOptionText,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
             <TouchableOpacity
               style={themedStyles.closeButton}
               onPress={() => setIsOpen(false)}

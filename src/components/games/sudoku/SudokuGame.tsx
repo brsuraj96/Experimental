@@ -43,6 +43,8 @@ import {
 import FullScreenPrompt from "../../common/FullScreenPrompt";
 
 interface SudokuGameProps {
+  title: string;
+  subtitle: string;
   difficulty: Difficulty;
   onMove: () => void;
   onComplete: () => void;
@@ -68,6 +70,8 @@ const AUTOSAVE_INTERVAL = 10000; // 10 seconds
 const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
   (
     {
+      title,
+      subtitle,
       difficulty,
       onMove,
       onComplete,
@@ -969,8 +973,9 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
       return (
         <FullScreenPrompt
           visible={showContinueDialog}
-          title="Continue your last game?"
-          message="We found a saved game. Would you like to continue where you left off or start a new game?"
+          gameName={title}
+          timer={pendingRestoreState?.timer}
+          difficulty={pendingRestoreState?.difficulty}
           onContinue={handleContinue}
           onNewGame={handleNewGame}
         />

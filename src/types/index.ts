@@ -417,6 +417,8 @@ export interface BaseGameProps {
 }
 
 export interface SudokuGameProps extends BaseGameProps {
+  title: string;
+  subtitle: string;
   settings: SudokuSettings;
   onDifficultyChange: (difficulty: Difficulty) => void;
 }

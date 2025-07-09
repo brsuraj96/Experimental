@@ -118,6 +118,23 @@ const getGameTitle = (
   }
 };
 
+// Move these outside the component so they are accessible
+const settingsMap = {
+  [GameType.SUDOKU]: (settings: any) => settings as SudokuSettings,
+  [GameType.SLIDE_TILES]: (settings: any) =>
+    settings as SlideTilesSettings & ExtendedSlideTilesSettings,
+  [GameType.FLOW_FREE]: (settings: any) => settings as FlowFreeSettings,
+  [GameType.WORDSEARCH]: (settings: any) => settings as WordSearchSettings,
+  [GameType.CROSSWORD]: (settings: any) => settings as CrosswordSettings,
+  [GameType.WATER_FLOW]: (settings: any) => settings as WaterFlowSettings,
+  [GameType.MATCHSTICK]: (settings: any) => settings as MatchstickSettings,
+  [GameType.SPOT_DIFFERENCE]: (settings: any) =>
+    settings as SpotDifferenceSettings,
+} as const;
+function isSupportedGameType(type: GameType): type is keyof typeof settingsMap {
+  return Object.keys(settingsMap).includes(type);
+}
+
 const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   const { gameType, difficulty } = route.params;
   const { baseSettings, gameSettings } = useSettings();
@@ -323,71 +340,100 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   );
 
   const gameProps = useMemo(() => {
+    if (!isSupportedGameType(gameType)) return undefined;
     const baseProps = {
+      title: t(getGameTitle(gameType, t)),
+      subtitle: t(difficulty.toLowerCase()),
       difficulty,
       onMove: handleMove,
       onComplete: handleComplete,
       orientation: isLandscape ? "landscape" : "portrait",
-      settings: gameSettings[gameType],
       isPaused: gameState.isPaused,
+      isGameCompleted: gameState.isGameCompleted,
     };
-
     switch (gameType) {
       case GameType.SUDOKU:
         return {
           ...baseProps,
+          settings: settingsMap[GameType.SUDOKU](gameSettings[GameType.SUDOKU]),
           onDifficultyChange: handleDifficultyChange,
           skipRestoreOnMount: skipRestoreOnMount,
           onPause: handlePause,
           onResume: handleResume,
-        };
+        } as SudokuGameProps;
       case GameType.SLIDE_TILES:
         return {
           ...baseProps,
+          settings: settingsMap[GameType.SLIDE_TILES](
+            gameSettings[GameType.SLIDE_TILES]
+          ),
           onDifficultyChange: handleDifficultyChange,
-        };
+        } as SlideTilesGameProps;
       case GameType.FLOW_FREE:
         return {
           ...baseProps,
+          settings: settingsMap[GameType.FLOW_FREE](
+            gameSettings[GameType.FLOW_FREE]
+          ),
           onDifficultyChange: handleDifficultyChange,
-        };
+        } as FlowFreeGameProps;
       case GameType.WORDSEARCH:
         return {
           ...baseProps,
+          settings: settingsMap[GameType.WORDSEARCH](
+            gameSettings[GameType.WORDSEARCH]
+          ),
           onDifficultyChange: handleDifficultyChange,
-        };
+        } as WordSearchGameProps;
       case GameType.CROSSWORD:
         return {
           ...baseProps,
+          settings: settingsMap[GameType.CROSSWORD](
+            gameSettings[GameType.CROSSWORD]
+          ),
           onDifficultyChange: handleDifficultyChange,
-        };
+        } as CrosswordGameProps;
       case GameType.WATER_FLOW:
         return {
           ...baseProps,
+          settings: settingsMap[GameType.WATER_FLOW](
+            gameSettings[GameType.WATER_FLOW]
+          ),
           onDifficultyChange: handleDifficultyChange,
-        };
+        } as WaterFlowGameProps;
       case GameType.MATCHSTICK:
         return {
           ...baseProps,
+          settings: settingsMap[GameType.MATCHSTICK](
+            gameSettings[GameType.MATCHSTICK]
+          ),
           onDifficultyChange: handleDifficultyChange,
-        };
+        } as MatchstickGameProps;
       case GameType.SPOT_DIFFERENCE:
         return {
           ...baseProps,
+          settings: settingsMap[GameType.SPOT_DIFFERENCE](
+            gameSettings[GameType.SPOT_DIFFERENCE]
+          ),
           onDifficultyChange: handleDifficultyChange,
-        };
+        } as SpotDifferenceGameProps;
       default:
-        return baseProps;
+        return undefined;
     }
   }, [
+    gameType,
+    t,
     difficulty,
     handleMove,
     handleComplete,
     isLandscape,
     gameSettings,
-    gameType,
     gameState.isPaused,
+    gameState.isGameCompleted,
     handleDifficultyChange,
+    skipRestoreOnMount,
+    handlePause,
+    handleResume,
   ]);
 
   // Memoize header props
@@ -427,11 +473,19 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
 
   // Render game component based on type
   const renderGame = () => {
+    if (!gameProps) return null;
     switch (gameType) {
-      case GameType.SUDOKU:
+      case GameType.SUDOKU: {
+        const { title, subtitle, ...rest } = gameProps as SudokuGameProps;
         return (
-          <SudokuGame ref={sudokuGameRef} {...(gameProps as SudokuGameProps)} />
+          <SudokuGame
+            ref={sudokuGameRef}
+            title={title}
+            subtitle={subtitle}
+            {...rest}
+          />
         );
+      }
       case GameType.SLIDE_TILES:
         return (
           <MemoizedSlideTilesGame {...(gameProps as SlideTilesGameProps)} />
