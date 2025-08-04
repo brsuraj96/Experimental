@@ -400,6 +400,7 @@ export type RootStackParamList = {
   Premium: undefined;
   Statistics: undefined;
   HowToPlay: undefined;
+  HowToPlayDetail: { gameType: GameType };
   HelpCenter: undefined;
   About: undefined;
   Language: undefined;

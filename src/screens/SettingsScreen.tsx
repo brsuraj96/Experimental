@@ -324,12 +324,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       {
         title: t("Game Settings"),
         items: [
-          {
-            type: "toggle" as const,
-            key: "timer" as SettingKey,
-            label: t("timer"),
-            icon: "clock",
-          },
+          // {
+          //   type: "toggle" as const,
+          //   key: "timer" as SettingKey,
+          //   label: t("timer"),
+          //   icon: "clock",
+          // },
           {
             type: "toggle" as const,
             key: "smartHint" as SettingKey,
@@ -494,16 +494,16 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           setShowQuitDialog(true);
         } else if (item.key === "HelpCenter") {
           navigation.navigate("HelpCenter");
+        } else if (item.key === "HowToPlay") {
+          navigation.navigate("HowToPlay");
+        } else if (item.key === "HowToPlayDetail") {
+          navigation.navigate("HowToPlayDetail", { gameType: currentGameType });
         } else {
-          const route = item.key as Exclude<
-            keyof RootStackParamList,
-            "Game" | "Completion"
-          >;
-          navigation.navigate(route);
+          navigation.navigate(item.key as any);
         }
       }
     },
-    [navigation]
+    [navigation, currentGameType]
   );
 
   // Fix: Only navigate back on hardware back press, do not show exit dialog

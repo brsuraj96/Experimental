@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from "react";
+import React, { createContext, useContext, ReactNode, useMemo } from "react";
 import { usePauseTimer } from "../components/common/TimerLogic";
 
 interface TimerContextType {
@@ -43,7 +43,12 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({
     autoStart,
   });
 
+  // 👇 Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => timerLogic, [timerLogic]);
+
   return (
-    <TimerContext.Provider value={timerLogic}>{children}</TimerContext.Provider>
+    <TimerContext.Provider value={contextValue}>
+      {children}
+    </TimerContext.Provider>
   );
 };

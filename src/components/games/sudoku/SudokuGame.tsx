@@ -98,22 +98,14 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
 
     // Handle timer state based on game state
     useEffect(() => {
-      if (!settings.timer) {
-        pause();
-        return;
-      }
+      const shouldPause = !settings.timer || isGameCompleted || isPaused;
 
-      if (isGameCompleted) {
+      if (shouldPause && isRunning) {
         pause();
-        return;
-      }
-
-      if (isPaused) {
-        pause();
-      } else if (!isRunning) {
+      } else if (!shouldPause && !isRunning) {
         start();
       }
-    }, [settings.timer, isGameCompleted, isPaused, isRunning, start, pause]);
+    }, [settings.timer, isGameCompleted, isPaused, isRunning, pause, start]);
 
     const [selectedCell, setSelectedCell] = useState<[number, number] | null>(
       null
