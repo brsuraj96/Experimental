@@ -107,13 +107,19 @@ const FullScreenPrompt: React.FC<FullScreenPromptProps> = ({
     <Modal visible={visible} animationType="fade" transparent>
       <View style={styles.modal} pointerEvents="auto">
         <View style={styles.container}>
-          <Text style={styles.gameName}>{"Classic " + gameName}</Text>
+          <Text style={styles.gameName}>{`Classic ${gameName}`}</Text>
           <TouchableOpacity style={styles.button} onPress={onContinue}>
             <Text style={styles.buttonText}>{continueText}</Text>
             {(timer || difficulty) && (
               <View style={[styles.timerContainer, { marginTop: 4 }]}>
                 {timer && (
-                  <>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
                     <FontAwesome5
                       name="clock"
                       size={14}
@@ -122,7 +128,7 @@ const FullScreenPrompt: React.FC<FullScreenPromptProps> = ({
                     <Text style={styles.subContent}>
                       {formatTime(Number(timer))}
                     </Text>
-                  </>
+                  </View>
                 )}
                 {timer && difficulty && (
                   <Text style={styles.subContent}>-</Text>

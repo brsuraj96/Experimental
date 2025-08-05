@@ -34,18 +34,9 @@ export interface BaseSettings {
 }
 
 // Game-specific settings
-export interface SudokuSettings extends BaseSettings {
-  timer: boolean;
-  smartHint: boolean;
-  showProgress: boolean;
-  mistakeLimit: boolean;
-  numberFirst: boolean;
-  highlightPeer: boolean;
-  highlightSameNumbers: boolean;
-  autoRemoveNotes: boolean;
-  remainingNumbers: boolean;
-  showScore: boolean;
-}
+import { SudokuSettings as UpdatedSudokuSettings } from "./settings";
+
+export interface SudokuSettings extends UpdatedSudokuSettings {}
 
 export interface SlideTilesSettings extends BaseSettings {
   showTimer: boolean;

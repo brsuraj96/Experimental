@@ -37,6 +37,7 @@ interface SudokuControlsProps {
   disableNotesButton: boolean;
   settings: SudokuSettings;
   numpadFontSize: number;
+  badgeCount: number;
 }
 
 const createStyles = (theme: any) =>
@@ -184,6 +185,22 @@ const createStyles = (theme: any) =>
       borderTopLeftRadius: 8,
       borderBottomLeftRadius: 8,
     },
+    hintBadge: {
+      position: "absolute",
+      top: -10,
+      right: -10,
+      backgroundColor: theme.colors.primary,
+      borderRadius: 12,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    hintBadgeText: {
+      color: theme.colors.textLight,
+      fontSize: 10,
+      fontWeight: "bold",
+    },
   });
 
 export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
@@ -205,6 +222,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
     disableNotesButton,
     settings,
     numpadFontSize,
+    badgeCount,
   }) => {
     const { currentTheme } = useTheme();
     const { t } = useLocalization();
@@ -300,6 +318,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
         isActive = false,
         testID,
         disabled = false,
+        badgeCount,
       }: {
         icon: string;
         onPress: () => void;
@@ -307,6 +326,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
         isActive?: boolean;
         testID?: string;
         disabled?: boolean;
+        badgeCount?: number;
       }) => (
         <TouchableOpacity
           style={[
@@ -318,6 +338,11 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
           testID={testID}
           disabled={disabled}
         >
+          {badgeCount !== undefined && badgeCount > 0 && (
+            <View style={styles.hintBadge}>
+              <Text style={styles.hintBadgeText}>{badgeCount}</Text>
+            </View>
+          )}
           <FontAwesome5 name={icon} style={styles.iconText} />
           <Text style={styles.actionText}>{t(text)}</Text>
         </TouchableOpacity>
@@ -521,6 +546,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
               onPress: onHintPress,
               text: "hint",
               testID: "hint-button",
+              badgeCount: badgeCount,
             })}
         </View>
       ),
@@ -537,6 +563,7 @@ export const SudokuControls: React.FC<SudokuControlsProps> = React.memo(
         numberFirstMode,
         lockedNumber,
         settings.smartHint,
+        settings.remainingHints,
       ]
     );
 

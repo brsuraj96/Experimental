@@ -360,6 +360,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
           skipRestoreOnMount: skipRestoreOnMount,
           onPause: handlePause,
           onResume: handleResume,
+          navigation,
         } as SudokuGameProps;
       case GameType.SLIDE_TILES:
         return {

@@ -24,6 +24,8 @@ export interface CommonGameSettings {
 
 // Game-specific settings
 export interface SudokuSettings extends BaseSettings, CommonGameSettings {
+  smartHint: boolean;
+  showProgress: boolean;
   mistakeLimit: boolean;
   numberFirst: boolean;
   highlightPeer: boolean;
@@ -31,6 +33,7 @@ export interface SudokuSettings extends BaseSettings, CommonGameSettings {
   autoRemoveNotes: boolean;
   remainingNumbers: boolean;
   showScore: boolean;
+  remainingHints: number; // Added to track the number of remaining hints
 }
 
 export interface SlideTilesSettings extends BaseSettings, CommonGameSettings {

@@ -6,13 +6,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import {
-  View,
-  StyleSheet,
-  Alert,
-  Vibration,
-  ActivityIndicator,
-} from "react-native";
+import { View, StyleSheet, Vibration, ActivityIndicator } from "react-native";
 import {
   Difficulty,
   GameType,
@@ -41,6 +35,7 @@ import {
   clearAutosaveState,
 } from "../../../utils/storage";
 import FullScreenPrompt from "../../common/FullScreenPrompt";
+import Dialog from "../../common/Dialog";
 
 interface SudokuGameProps {
   title: string;
@@ -56,6 +51,7 @@ interface SudokuGameProps {
   onPause?: () => void;
   onResume?: () => void;
   skipRestoreOnMount?: boolean;
+  navigation?: any; // Add navigation prop
 }
 
 const SUDOKU_MISTAKE_LIMIT = 3;
@@ -83,12 +79,20 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
       onPause,
       onResume,
       skipRestoreOnMount,
+      navigation, // Destructure navigation prop
     },
     ref
   ) => {
     const { currentTheme } = useTheme();
     const { playSound } = useSound();
     const { timer, start, pause, resume, reset, isRunning } = useTimer();
+
+    // Ensure settings has a default value for remainingHints
+    const updatedSettings = {
+      ...settings,
+      remainingHints: settings.remainingHints ?? 1, // Default to 1 if not provided
+    };
+
     const [initialBoard, setInitialBoard] = useState<SudokuBoard>(() =>
       generateSudoku(difficulty)
     );
@@ -329,14 +333,26 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
     // Use settings to control mistake limit
     useEffect(() => {
       if (settings.mistakeLimit && mistakes >= SUDOKU_MISTAKE_LIMIT) {
-        Alert.alert(
+        showDialog(
           "Game Over",
           `You have made ${SUDOKU_MISTAKE_LIMIT} mistakes. Game over.`,
-          [{ text: "OK", onPress: () => onComplete() }],
-          { cancelable: false }
+          [
+            {
+              text: "OK",
+              onPress: async () => {
+                closeDialog();
+                await clearAutosaveState();
+                setShowContinueDialog(false);
+                setRestoredFromSave(false);
+                setIsGameActive(false); // Exit the game
+                onComplete(); // Notify parent component about game completion
+                navigation?.goBack();
+              },
+            },
+          ]
         );
       }
-    }, [mistakes, settings.mistakeLimit, onComplete]);
+    }, [mistakes, settings.mistakeLimit, onComplete, navigation]);
 
     // We don't need a separate effect for autoRemoveNotes
     // This is now handled directly in the handleNumberPress function
@@ -745,68 +761,107 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
       }
     };
 
-    const handleHintPress = () => {
-      if (isGameComplete(board) || isPaused) return; // If a cell is selected, get its solution
-      let hint;
-      if (selectedCell) {
-        const [row, col] = selectedCell;
-        const cell = board[row][col];
+    const [remainingHints, setRemainingHints] = useState(1); // Start with 1 free hint
 
-        // Don't provide hints for fixed cells or correctly filled cells
-        if (cell.isFixed || (cell.value !== null && !cell.isError)) {
-          Alert.alert(
-            "Hint not needed",
-            "This cell is already correctly filled."
+    const handleHintPress = () => {
+      if (isGameComplete(board) || isPaused) return;
+
+      if (remainingHints > 0) {
+        // Use a hint
+        let hint;
+        if (selectedCell) {
+          const [row, col] = selectedCell;
+          const cell = board[row][col];
+
+          if (cell.isFixed || (cell.value !== null && !cell.isError)) {
+            // Alert.alert(
+            //   "Hint not needed",
+            //   "This cell is already correctly filled."
+            // );
+            showDialog(
+              "Hint not needed",
+              "This cell is already correctly filled.",
+              [{ text: "OK", onPress: closeDialog, style: "default" }]
+            );
+            return;
+          }
+
+          hint = getHint(board, row, col);
+        } else {
+          hint = getHint(board);
+        }
+
+        if (!hint) {
+          // Alert.alert(
+          //   "No hints available",
+          //   "No valid hints found at this time."
+          // );
+          showDialog(
+            "No hints available",
+            "No valid hints found at this time.",
+            [{ text: "OK", onPress: closeDialog, style: "default" }]
           );
           return;
         }
 
-        // Get the solution for this cell
-        hint = getHint(board, row, col);
+        const { row, col, value } = hint;
+        const newBoard = [...board.map((r) => [...r])];
+        newBoard[row][col] = {
+          ...newBoard[row][col],
+          value,
+          notes: Array(9).fill(false),
+          isError: false,
+        };
+
+        setBoard(newBoard);
+
+        // In number first mode, clear the locked number
+        if (settings.numberFirst && lockedNumber !== null) {
+          setLockedNumber(null);
+          setSelectedNumber(null);
+        }
+
+        setHistory([...history, { board: newBoard, selected: selectedCell }]);
+        setRemainingHints((prev) => prev - 1); // Decrease remaining hints
+
+        // Update score for using a hint and reset streak
+        scoreManager.current.addHintUsed();
+        setCorrectStreak(0); // Reset streak when using a hint
+
+        if (settings.audioEffect) {
+          playSound("move");
+        }
+
+        if (settings.vibration) {
+          Vibration.vibrate([0, 100, 50, 100]);
+        }
+        onMove();
       } else {
-        // Original hint behavior for when no cell is selected
-        hint = getHint(board);
+        // No free hints left, prompt to watch an ad
+        showDialog(
+          "Watch Ad for Hint",
+          "You have used all your free hints. Watch an ad to get more hints.",
+          [
+            {
+              text: "Watch Ad",
+              style: "destructive",
+              onPress: () => {
+                // Simulate watching an ad
+                setTimeout(() => {
+                  showDialog("Ad Watched", "You have earned 1 more hint.", [
+                    { text: "OK", onPress: closeDialog },
+                  ]);
+                  setRemainingHints((prev) => prev + 1);
+                }, 2000); // Simulate ad duration
+              },
+            },
+            { text: "Cancel", onPress: closeDialog, style: "cancel" },
+          ]
+        );
       }
-
-      if (!hint) {
-        Alert.alert("No hints available", "No valid hints found at this time.");
-        return;
-      }
-
-      const { row, col, value } = hint;
-      const newBoard = [...board.map((r) => [...r])];
-      newBoard[row][col] = {
-        ...newBoard[row][col],
-        value,
-        notes: Array(9).fill(false),
-        isError: false,
-      };
-
-      setBoard(newBoard);
-
-      // In number first mode, clear the locked number
-      if (settings.numberFirst && lockedNumber !== null) {
-        setLockedNumber(null);
-        setSelectedNumber(null);
-      }
-
-      setHistory([...history, { board: newBoard, selected: selectedCell }]);
-
-      // Update score for using a hint and reset streak
-      scoreManager.current.addHintUsed();
-      setCorrectStreak(0); // Reset streak when using a hint
-
-      if (settings.audioEffect) {
-        playSound("move");
-      }
-
-      if (settings.vibration) {
-        Vibration.vibrate([0, 100, 50, 100]);
-      }
-      onMove();
     };
 
-    // Handle streak tracking and bonus
+    // Define updateStreak function
     const updateStreak = (isValid: boolean) => {
       if (isValid) {
         const newStreak = correctStreak + 1;
@@ -823,6 +878,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
       }
     };
 
+    // Define removeRelatedNotes function
     const removeRelatedNotes = (
       currentBoard: SudokuBoard,
       row: number,
@@ -879,7 +935,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
 
     const isLandscape = orientation === "landscape";
 
-    // Font size mapping
+    // Define fontSizes mapping
     const fontSizeMap = {
       small: { cell: 18, numpad: 20, note: 8 },
       medium: { cell: 22, numpad: 24, note: 10 },
@@ -944,6 +1000,43 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
       // New game will be initialized by the effect above
     };
 
+    // Add dialog state and helper functions at the top level of the component
+    interface DialogButton {
+      text: string;
+      onPress: () => void;
+      style?: "default" | "cancel" | "destructive";
+    }
+
+    interface DialogState {
+      visible: boolean;
+      title: string;
+      message: string;
+      buttons: DialogButton[];
+    }
+
+    const [dialogState, setDialogState] = useState<DialogState>({
+      visible: false,
+      title: "",
+      message: "",
+      buttons: [],
+    });
+
+    const showDialog = (
+      title: string,
+      message: string,
+      buttons: Array<{
+        text: string;
+        onPress: () => void;
+        style?: "default" | "cancel" | "destructive";
+      }>
+    ) => {
+      setDialogState({ visible: true, title, message, buttons });
+    };
+
+    const closeDialog = () => {
+      setDialogState({ ...dialogState, visible: false });
+    };
+
     // Show loader while loading saved progress
     if (isLoading) {
       return (
@@ -987,7 +1080,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
           onDifficultyChange={onDifficultyChange}
           score={score}
           previousScore={previousScore}
-          settings={settings}
+          settings={updatedSettings} // Pass updated settings
           isPaused={isPaused}
           gameType={GameType.SUDOKU}
           onPause={onPause}
@@ -998,7 +1091,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
             board={board}
             selectedCell={selectedCell}
             onCellPress={handleCellPress}
-            settings={settings}
+            settings={updatedSettings} // Pass updated settings
             lockedNumber={lockedNumber}
             cellFontSize={fontSizes.cell}
             noteFontSize={fontSizes.note}
@@ -1033,10 +1126,18 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
                 ? board[selectedCell[0]][selectedCell[1]].isFixed
                 : false
             }
-            settings={settings}
+            settings={updatedSettings} // Pass updated settings
+            badgeCount={remainingHints} // Show remaining hints
             numpadFontSize={fontSizes.numpad}
           />
         </View>
+        <Dialog
+          visible={dialogState.visible}
+          title={dialogState.title}
+          message={dialogState.message}
+          buttons={dialogState.buttons}
+          onDismiss={closeDialog}
+        />
       </View>
     );
   }
