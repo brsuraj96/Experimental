@@ -36,6 +36,12 @@ import {
 } from "../../../utils/storage";
 import FullScreenPrompt from "../../common/FullScreenPrompt";
 import Dialog from "../../common/Dialog";
+import {
+  RewardedAd,
+  TestIds,
+  AdEventType,
+  RewardedAdEventType,
+} from "react-native-google-mobile-ads";
 
 interface SudokuGameProps {
   title: string;
@@ -846,13 +852,15 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
               text: "Watch Ad",
               style: "destructive",
               onPress: () => {
-                // Simulate watching an ad
-                setTimeout(() => {
-                  showDialog("Ad Watched", "You have earned 1 more hint.", [
-                    { text: "OK", onPress: closeDialog },
-                  ]);
-                  setRemainingHints((prev) => prev + 1);
-                }, 2000); // Simulate ad duration
+                if (rewardedAd.loaded) {
+                  rewardedAd.show();
+                } else {
+                  showDialog(
+                    "Ad Not Ready",
+                    "The ad is not ready yet. Please try again later.",
+                    [{ text: "OK", onPress: closeDialog }]
+                  );
+                }
               },
             },
             { text: "Cancel", onPress: closeDialog, style: "cancel" },
@@ -860,6 +868,48 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
         );
       }
     };
+
+    // Initialize rewarded ad
+    const rewardedAd = RewardedAd.createForAdRequest(TestIds.REWARDED, {
+      requestNonPersonalizedAdsOnly: true,
+    });
+
+    useEffect(() => {
+      const unsubscribe = rewardedAd.addAdEventListener(
+        AdEventType.LOADED,
+        () => {
+          console.log("Rewarded ad loaded.");
+          rewardedAd.show();
+        }
+      );
+
+      const rewardEarnedListener = rewardedAd.addAdEventListener(
+        RewardedAdEventType.EARNED_REWARD,
+        (reward: { type: string; amount: number }) => {
+          console.log("User earned reward:", reward);
+          setRemainingHints((prev) => prev + 1); // Grant 1 additional hint
+          showDialog("Ad Watched", "You have earned 1 more hint.", [
+            { text: "OK", onPress: closeDialog },
+          ]);
+        }
+      );
+
+      const adClosedListener = rewardedAd.addAdEventListener(
+        AdEventType.CLOSED,
+        () => {
+          console.log("Rewarded ad closed.");
+        }
+      );
+
+      // Load the ad
+      rewardedAd.load();
+
+      return () => {
+        unsubscribe();
+        rewardEarnedListener();
+        adClosedListener();
+      };
+    }, []);
 
     // Define updateStreak function
     const updateStreak = (isValid: boolean) => {
