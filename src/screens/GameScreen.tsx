@@ -136,9 +136,9 @@ function isSupportedGameType(type: GameType): type is keyof typeof settingsMap {
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
-  const { gameType, difficulty } = route.params;
-  const { baseSettings, gameSettings } = useSettings();
+  const { gameType, difficulty } = route.params; // Explicitly destructure route params
   const { currentTheme } = useTheme();
+  const { baseSettings, gameSettings } = useSettings(); // Access settings from context
   const { playSound } = useSound();
   const {
     timer,
@@ -517,12 +517,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ route, navigation }) => {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: currentTheme.colors.background },
-      ]}
-    >
+    <View style={{ flex: 1, backgroundColor: currentTheme.colors.background }}>
       <Header {...headerProps} />
       {renderGame()}
       <Dialog
@@ -560,4 +555,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default memo(GameScreen);
+export default GameScreen as React.ComponentType;

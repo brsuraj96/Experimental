@@ -1,4 +1,5 @@
 import React from "react";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import {
   View,
   Text,
@@ -14,6 +15,7 @@ interface DialogButton {
   text: string;
   onPress: () => void;
   style?: "default" | "cancel" | "destructive";
+  icon?: string; // Optional icon name for button
 }
 
 interface DialogProps {
@@ -110,41 +112,48 @@ const Dialog: React.FC<DialogProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <TouchableWithoutFeedback onPress={onDismiss}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback>
-            <View style={styles.dialog}>
-              <Text style={styles.title}>{title}</Text>
-              {message && <Text style={styles.message}>{message}</Text>}
+      <View style={styles.overlay}>
+        <View style={styles.dialog}>
+          <Text style={styles.title}>{title}</Text>
+          {message && <Text style={styles.message}>{message}</Text>}
 
-              <View style={styles.buttonContainer}>
-                {buttons.map((button, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.button,
-                      button.style === "cancel" && styles.cancelButton,
-                      button.style === "destructive" &&
-                        styles.destructiveButton,
-                    ]}
-                    onPress={button.onPress}
-                  >
-                    <Text
-                      style={[
-                        styles.buttonText,
-                        button.style === "destructive" &&
-                          styles.destructiveButtonText,
-                      ]}
-                    >
-                      {button.text}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
+          <View style={styles.buttonContainer}>
+            {buttons.map((button, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.button,
+                  button.style === "cancel" && styles.cancelButton,
+                  button.style === "destructive" && styles.destructiveButton,
+                  {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  },
+                ]}
+                onPress={button.onPress}
+              >
+                {button.icon && (
+                  <FontAwesome5
+                    name={button.icon}
+                    size={16}
+                    color={currentTheme.colors.white}
+                  />
+                )}
+                <Text
+                  style={[
+                    styles.buttonText,
+                    button.style === "destructive" &&
+                      styles.destructiveButtonText,
+                  ]}
+                >
+                  {"   " + button.text}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 };

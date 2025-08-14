@@ -72,6 +72,8 @@ export const usePauseTimer = ({
     setIsPaused(false);
     setPausedAt(null);
     setResumedAt(null);
+    // Reset the last tick reference to prevent timer jumping
+    lastTickRef.current = Date.now();
   }, []);
 
   const formatTime = (seconds: number) => {

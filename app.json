@@ -1,19 +1,17 @@
 {
-  "name": "PuzzleWorld",
-  "displayName": "Puzzle World",
   "expo": {
-    "name": "Puzzle World",
+    "name": "PuzzleWorld",
+    "displayName": "Puzzle World",
     "slug": "puzzle-world",
     "version": "1.0.0",
     "orientation": "default",
-    "icon": "./generated-icon.png",
+    "icon": "./src/assets/image/puzzle_world.png",
     "userInterfaceStyle": "automatic",
+    "sdkVersion": "53.0.0",
     "splash": {
       "backgroundColor": "#1E1E2F"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.puzzleworld.app"
@@ -28,8 +26,6 @@
       "favicon": "./generated-icon.png",
       "bundler": "webpack"
     },
-    "plugins": [
-      "expo-localization"
-    ]
+    "plugins": ["expo-localization"]
   }
 }

@@ -8,6 +8,7 @@ interface ThemeContextType {
   themeType: ThemeType;
   currentTheme: Theme;
   setThemeType: (themeType: ThemeType) => void;
+  toggleTheme: () => void; // Add toggleTheme to fix missing property error
 }
 
 const ThemeContext = React.createContext<ThemeContextType | null>(null);
@@ -36,6 +37,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return Themes[themeType] ?? Themes.default;
   }, [themeType]);
 
+  const toggleTheme = () => {
+    setInternalThemeType((prevThemeType) =>
+      prevThemeType === "dark" ? "default" : "dark"
+    );
+  };
+
   const value = useMemo(
     () => ({
       themeType,
@@ -48,6 +55,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
         setInternalThemeType(newThemeType);
       },
+      toggleTheme,
     }),
     [themeType, currentTheme, baseSettings.darkMode, updateBaseSettings]
   );

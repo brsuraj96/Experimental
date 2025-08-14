@@ -28,12 +28,12 @@ import GameHeader from "./GameHeader";
 import { ScoreManager } from "../../../utils/scoring";
 import { deepClone } from "../../../utils/helpers";
 import {
-  saveAutosaveState,
   loadAutosaveState,
   uploadAutosaveStateToCloud,
   downloadAutosaveStateFromCloud,
   clearAutosaveState,
 } from "../../../utils/storage";
+import { useGameAutosave } from "../../../hooks/useGameAutosave";
 import FullScreenPrompt from "../../common/FullScreenPrompt";
 import Dialog from "../../common/Dialog";
 
@@ -106,7 +106,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
 
       if (shouldPause && isRunning) {
         pause();
-      } else if (!shouldPause && !isRunning) {
+      } else if (!shouldPause && !isRunning && !isPaused) {
         start();
       }
     }, [settings.timer, isGameCompleted, isPaused, isRunning, pause, start]);
@@ -135,6 +135,9 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
     const [restoredFromSave, setRestoredFromSave] = useState(false);
     const [isGameActive, setIsGameActive] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [remainingHints, setRemainingHints] = useState(1); // Start with 1 free hint
+    const [showGameOverDialog, setShowGameOverDialog] = useState(false);
+    const [hasUsedSecondChance, setHasUsedSecondChance] = useState(false);
     // Placeholder: get userId from context or props if available
     const userId = null; // Replace with actual user id if signed in
 
@@ -158,6 +161,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
         timer,
         difficulty,
         settings,
+        remainingHints,
       }),
       [
         initialBoard,
@@ -176,6 +180,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
         timer,
         difficulty,
         settings,
+        remainingHints,
       ]
     );
 
@@ -183,8 +188,18 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
     const restoreGameState = useCallback(
       (saved: any) => {
         if (!saved) return;
+
+        console.log("[Autosave] Restoring game state:", {
+          hasBoard: !!saved.board,
+          hasTimer: typeof saved.timer === "number",
+          hasScore: typeof saved.score === "number",
+          difficulty: saved.difficulty,
+          savedKeys: Object.keys(saved),
+        });
+
         // Set all state in a single batch to avoid partial updates
-        const restoreDifficulty = difficulty;
+        const restoreDifficulty = saved.difficulty || difficulty;
+
         setInitialBoard(
           saved.initialBoard || generateSudoku(restoreDifficulty)
         );
@@ -212,106 +227,119 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
         setPreviousScore(saved.previousScore ?? 0);
         setCorrectStreak(saved.correctStreak ?? 0);
         setIsPausing(saved.isPausing ?? false);
+        setRemainingHints(saved.remainingHints ?? 1);
+
         // If the restored difficulty is different, update parent
-        // if (saved.difficulty && saved.difficulty !== difficulty) {
-        //   onDifficultyChange(saved.difficulty);
-        // }
-        // Timer and settings handled elsewhere
+        if (saved.difficulty && saved.difficulty !== difficulty) {
+          onDifficultyChange(saved.difficulty);
+        }
+
+        // Check if restored game should show game over dialog immediately
+        if (
+          settings.mistakeLimit &&
+          (saved.mistakes ?? 0) >= SUDOKU_MISTAKE_LIMIT
+        ) {
+          console.log(
+            "[Autosave] Restored game has too many mistakes, showing game over dialog"
+          );
+          // If mistakes are way over the limit, they might have used second chance already
+          if ((saved.mistakes ?? 0) >= SUDOKU_MISTAKE_LIMIT * 2) {
+            setHasUsedSecondChance(true);
+          }
+          setShowGameOverDialog(true);
+        }
+
+        console.log("[Autosave] Game state restored successfully");
       },
-      [difficulty]
+      [difficulty, onDifficultyChange, settings.mistakeLimit]
     );
 
-    // Autosave effect (every AUTOSAVE_INTERVAL ms)
-    useEffect(() => {
-      if (!isGameActive) return;
-      const interval = setInterval(() => {
-        const state = getCurrentGameState();
-        saveAutosaveState(state);
-        if (userId) {
-          uploadAutosaveStateToCloud(userId, state);
-        }
-      }, AUTOSAVE_INTERVAL);
-      return () => clearInterval(interval);
-    }, [getCurrentGameState, userId, isGameActive]);
+    // --- Optimized AUTOSAVE LOGIC ---
+    const currentGameStateRef = useRef(getCurrentGameState());
 
-    // Autosave on every move
+    // Update the ref whenever state changes
     useEffect(() => {
-      if (!isGameActive) return;
-      const state = getCurrentGameState();
-      saveAutosaveState(state);
-      if (userId) {
-        uploadAutosaveStateToCloud(userId, state);
-      }
-    }, [
-      board,
-      selectedCell,
-      selectedNumber,
-      lockedNumber,
-      isNoteMode,
-      history,
-      mistakes,
-      score,
-      previousScore,
-      correctStreak,
-      isPausing,
-      timer,
-      userId,
-      getCurrentGameState,
-      isGameActive,
-    ]);
+      const newState = getCurrentGameState();
+      currentGameStateRef.current = newState;
+      // Debug log for autosave state changes
+      console.log("[Autosave] State updated:", {
+        gameKey: `sudoku_${difficulty}`,
+        hasBoard: !!newState.board,
+        hasTimer: typeof newState.timer === "number",
+        hasScore: typeof newState.score === "number",
+        stateKeys: Object.keys(newState),
+      });
+    });
+
+    // Cleanup autosave state when component unmounts or difficulty changes
+    useEffect(() => {
+      return () => {
+        // Clear autosave state when component unmounts
+        console.log(
+          "[Autosave] Component unmounting, clearing autosave for:",
+          `sudoku_${difficulty}`
+        );
+        clearAutosaveState(`sudoku_${difficulty}`).catch((error) => {
+          console.error("Error clearing autosave on unmount:", error);
+        });
+      };
+    }, [difficulty]);
+
+    const { restoreState } = useGameAutosave({
+      gameKey: `sudoku_${difficulty}`,
+      state: currentGameStateRef.current,
+      saveToCloud: userId
+        ? (state) => uploadAutosaveStateToCloud(userId, state)
+        : undefined,
+      cloudInterval: 30000, // 30 seconds
+      debounceDelay: 1000, // 1 second
+    });
 
     // Modified restore on mount: only prompt if saved state exists
     useEffect(() => {
-      let isMounted = true;
-      (async () => {
-        // Only check for saved state if NOT a difficulty change (skipRestoreOnMount is false or undefined)
+      async function checkRestore() {
         if (skipRestoreOnMount) {
           setHasCheckedAutosave(true);
           setIsLoading(false);
           return;
         }
 
-        let restored = null;
-        let restoredFromCloud = null;
-        if (userId) {
-          restoredFromCloud = await downloadAutosaveStateFromCloud(userId);
-          if (restoredFromCloud && restoredFromCloud.state) {
-            restored = restoredFromCloud;
-            console.log("[Restore] Downloaded state:", restored);
-          }
-        }
-        if (!restored) {
-          const localRestored = await loadAutosaveState();
-          if (localRestored && localRestored.state) {
-            restored = localRestored;
-            console.log("[Restore] Loaded state:", restored);
-          }
-        }
-        // Show dialog if we have valid state and it's not empty (regardless of difficulty)
-        if (
-          restored &&
-          isMounted &&
-          restored.state &&
-          restored.state.board &&
-          restored.state.initialBoard &&
-          restored.state.difficulty === difficulty
-        ) {
-          setPendingRestoreState(restored.state);
-          setShowContinueDialog(true);
-          setIsGameActive(false);
-          console.log("[Restore] Showing continue dialog");
-        }
-        setHasCheckedAutosave(true);
-        setIsLoading(false);
-      })();
-      return () => {
-        isMounted = false;
-      };
-    }, [userId, skipRestoreOnMount]);
+        try {
+          const restored = await restoreState();
+          console.log("[Autosave] Restore check result:", {
+            hasRestoredState: !!restored,
+            restoredData: restored
+              ? {
+                  hasBoard: !!restored.board,
+                  hasTimer: typeof restored.timer === "number",
+                  hasScore: typeof restored.score === "number",
+                  difficulty: restored.difficulty,
+                }
+              : null,
+          });
 
-    // Only initialize a new game if not restoring and prompt is closed
+          if (restored) {
+            setPendingRestoreState(restored);
+            setShowContinueDialog(true);
+          }
+        } catch (error) {
+          console.error("Error checking for restore state:", error);
+        } finally {
+          setHasCheckedAutosave(true);
+          setIsLoading(false);
+        }
+      }
+      checkRestore();
+    }, [restoreState, skipRestoreOnMount]);
+
+    // Initialize a new game only when difficulty changes and not restoring
     useEffect(() => {
       if (!hasCheckedAutosave || showContinueDialog || restoredFromSave) return;
+
+      console.log(
+        "[Autosave] Initializing new game for difficulty:",
+        difficulty
+      );
 
       const newBoard = generateSudoku(difficulty);
       const cloned = deepClone(newBoard);
@@ -326,55 +354,74 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
       setScore(0);
       setPreviousScore(0);
       setIsPausing(false);
+      setRemainingHints(1);
+      setShowGameOverDialog(false);
+      setHasUsedSecondChance(false);
       scoreManager.current = new ScoreManager(GameType.SUDOKU, difficulty);
       reset();
-    }, [difficulty, hasCheckedAutosave, showContinueDialog, restoredFromSave]);
+      setIsGameActive(true);
+
+      console.log(
+        "[Autosave] New game initialized for difficulty:",
+        difficulty
+      );
+    }, [
+      difficulty,
+      hasCheckedAutosave,
+      showContinueDialog,
+      restoredFromSave,
+      reset,
+    ]);
 
     // Use settings to control mistake limit
     useEffect(() => {
-      if (settings.mistakeLimit && mistakes >= SUDOKU_MISTAKE_LIMIT) {
-        showDialog(
-          "Game Over",
-          `You have made ${SUDOKU_MISTAKE_LIMIT} mistakes. Game over.`,
-          [
-            {
-              text: "OK",
-              onPress: async () => {
-                closeDialog();
-                await clearAutosaveState();
-                setShowContinueDialog(false);
-                setRestoredFromSave(false);
-                setIsGameActive(false); // Exit the game
-                onComplete(); // Notify parent component about game completion
-                navigation?.goBack();
-              },
-            },
-          ]
+      if (
+        settings.mistakeLimit &&
+        mistakes >= SUDOKU_MISTAKE_LIMIT &&
+        !showGameOverDialog &&
+        !hasUsedSecondChance &&
+        !showContinueDialog &&
+        !isPaused
+      ) {
+        console.log(
+          "[Autosave] Game over due to mistakes, showing game over dialog for:",
+          `sudoku_${difficulty}`
         );
+        setShowGameOverDialog(true);
       }
-    }, [mistakes, settings.mistakeLimit, onComplete, navigation]);
+    }, [
+      mistakes,
+      settings.mistakeLimit,
+      showGameOverDialog,
+      difficulty,
+      hasUsedSecondChance,
+      showContinueDialog,
+      isPaused,
+    ]);
 
-    // We don't need a separate effect for autoRemoveNotes
-    // This is now handled directly in the handleNumberPress function
-    // when a number is placed on the board
-
-    // Initialize the game when difficulty changes
+    // Handle second chance logic - if second chance is used, allow one more mistake
     useEffect(() => {
-      // If skipRestoreOnMount is true, this is a difficulty change: always start a new game, don't check for saved state
-      const newBoard = generateSudoku(difficulty);
-      const cloned = deepClone(newBoard);
-      setInitialBoard(cloned);
-      setBoard(cloned);
-      setSelectedCell(null);
-      setSelectedNumber(null);
-      setLockedNumber(null);
-      setHistory([{ board: cloned, selected: null }]);
-      setMistakes(0);
-      reset();
-      setIsPausing(false);
-      scoreManager.current = new ScoreManager(GameType.SUDOKU, difficulty);
-      setIsGameActive(true); // Ensure autosave runs after difficulty change
-    }, [difficulty]);
+      if (
+        hasUsedSecondChance &&
+        mistakes >= SUDOKU_MISTAKE_LIMIT &&
+        !showGameOverDialog &&
+        !showContinueDialog &&
+        !isPaused
+      ) {
+        console.log(
+          "[Autosave] Game over after second chance, showing final game over dialog for:",
+          `sudoku_${difficulty}`
+        );
+        setShowGameOverDialog(true);
+      }
+    }, [
+      hasUsedSecondChance,
+      mistakes,
+      showGameOverDialog,
+      difficulty,
+      showContinueDialog,
+      isPaused,
+    ]);
 
     // Resume game state when unpausing
     useEffect(() => {
@@ -391,18 +438,30 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
     // Check if game is completed and apply completion bonuses
     useEffect(() => {
       if (isGameComplete(board) && !isGameCompleted) {
+        console.log(
+          "[Autosave] Game completed, clearing autosave for:",
+          `sudoku_${difficulty}`
+        );
+
         // Apply completion bonuses (perfect game, no hints, speed bonus)
         scoreManager.current.applyCompletionBonuses();
         setScore(scoreManager.current.getScore());
+
+        // Clear autosave state when game is completed
+        clearAutosaveState(`sudoku_${difficulty}`).catch((error) => {
+          console.error("Error clearing autosave on completion:", error);
+        });
+
         onComplete();
       }
-    }, [board, onComplete, isGameCompleted, mistakes]);
+    }, [board, onComplete, isGameCompleted, mistakes, difficulty]);
 
     // Update the remaining numbers whenever the board changes
     useEffect(() => {
       const remaining = calculateRemainingNumbers(board);
       setRemainingNumbers(remaining);
     }, [board]);
+
     // Update score when the board changes
     useEffect(() => {
       if (settings.showScore) {
@@ -410,7 +469,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
         setPreviousScore(score);
         setScore(newScore);
       }
-    }, [board, settings.showScore]);
+    }, [board, settings.showScore, score]);
 
     // Update difficulty in score manager
     useEffect(() => {
@@ -761,8 +820,6 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
       }
     };
 
-    const [remainingHints, setRemainingHints] = useState(1); // Start with 1 free hint
-
     const handleHintPress = () => {
       if (isGameComplete(board) || isPaused) return;
 
@@ -774,10 +831,6 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
           const cell = board[row][col];
 
           if (cell.isFixed || (cell.value !== null && !cell.isError)) {
-            // Alert.alert(
-            //   "Hint not needed",
-            //   "This cell is already correctly filled."
-            // );
             showDialog(
               "Hint not needed",
               "This cell is already correctly filled.",
@@ -792,10 +845,6 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
         }
 
         if (!hint) {
-          // Alert.alert(
-          //   "No hints available",
-          //   "No valid hints found at this time."
-          // );
           showDialog(
             "No hints available",
             "No valid hints found at this time.",
@@ -845,6 +894,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
             {
               text: "Watch Ad",
               style: "destructive",
+              icon: "play",
               onPress: () => {
                 // Simulate watching an ad
                 setTimeout(() => {
@@ -909,6 +959,16 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
 
     // Add a handler to reset to the initial board
     const handleRestart = useCallback(() => {
+      console.log(
+        "[Autosave] Restarting game, clearing autosave for:",
+        `sudoku_${difficulty}`
+      );
+
+      // Clear autosave state when restarting
+      clearAutosaveState(`sudoku_${difficulty}`).catch((error) => {
+        console.error("Error clearing autosave on restart:", error);
+      });
+
       setBoard(deepClone(initialBoard));
       setSelectedCell(null);
       setSelectedNumber(null);
@@ -919,10 +979,69 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
       setCorrectStreak(0);
       setScore(0);
       setPreviousScore(0);
+      setRemainingHints(1);
       reset();
       setIsPausing(false);
+      setShowGameOverDialog(false);
+      setHasUsedSecondChance(false);
       scoreManager.current = new ScoreManager(GameType.SUDOKU, difficulty);
+
+      console.log("[Autosave] Game restarted successfully");
     }, [initialBoard, reset, difficulty]);
+
+    // Game over dialog handlers
+    const handleSecondChance = useCallback(() => {
+      console.log("[Autosave] Second chance used, continuing game");
+      setShowGameOverDialog(false);
+      setHasUsedSecondChance(true);
+      // Reset mistakes to allow one more mistake
+      setMistakes(SUDOKU_MISTAKE_LIMIT - 1);
+      // Clear autosave state when using second chance
+      clearAutosaveState(`sudoku_${difficulty}`).catch((error) => {
+        console.error("Error clearing autosave on second chance:", error);
+      });
+    }, [difficulty]);
+
+    const handleGameOverRestart = useCallback(() => {
+      console.log("[Autosave] Game over restart selected");
+      setShowGameOverDialog(false);
+      setHasUsedSecondChance(false);
+      handleRestart();
+    }, [handleRestart]);
+
+    const handleGameOverNewGame = useCallback(async () => {
+      console.log("[Autosave] Game over new game selected");
+      setShowGameOverDialog(false);
+
+      // Clear autosave state
+      try {
+        await clearAutosaveState(`sudoku_${difficulty}`);
+      } catch (error) {
+        console.error("Error clearing autosave:", error);
+      }
+
+      // Force a new game initialization
+      const newBoard = generateSudoku(difficulty);
+      const cloned = deepClone(newBoard);
+      setInitialBoard(cloned);
+      setBoard(cloned);
+      setSelectedCell(null);
+      setSelectedNumber(null);
+      setLockedNumber(null);
+      setHistory([{ board: cloned, selected: null }]);
+      setMistakes(0);
+      setCorrectStreak(0);
+      setScore(0);
+      setPreviousScore(0);
+      setIsPausing(false);
+      setRemainingHints(1);
+      setShowGameOverDialog(false);
+      setHasUsedSecondChance(false);
+      scoreManager.current = new ScoreManager(GameType.SUDOKU, difficulty);
+      reset();
+
+      console.log("[Autosave] New game initialized after game over");
+    }, [difficulty, reset]);
 
     // Expose restart to parent via ref
     useImperativeHandle(
@@ -948,7 +1067,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-        gap: currentTheme.spacing.large,
+        gap: currentTheme.spacing.small,
       },
       landscapeContainer: {
         flexDirection: "row",
@@ -971,6 +1090,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
       controls: {
         width: "100%",
         maxWidth: 360,
+        marginTop: 0,
       },
       landscapeControls: {
         width: "40%",
@@ -979,25 +1099,87 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
     });
 
     // Handler for dialog actions
-    const handleContinue = () => {
+    const handleContinue = async () => {
+      console.log("[Autosave] Continuing from saved state:", {
+        hasPendingState: !!pendingRestoreState,
+        pendingStateKeys: pendingRestoreState
+          ? Object.keys(pendingRestoreState)
+          : [],
+      });
+
       if (pendingRestoreState) {
         setRestoredFromSave(true);
-        // Restore all state atomically
         restoreGameState(pendingRestoreState);
-        // Restore timer if present
+
+        // Properly restore timer state
         if (typeof pendingRestoreState.timer === "number") {
+          console.log("[Autosave] Restoring timer:", pendingRestoreState.timer);
           reset(pendingRestoreState.timer);
+          // Start timer if it was running before
+          if (pendingRestoreState.isPausing === false && settings.timer) {
+            console.log("[Autosave] Starting timer after restore");
+            start();
+          }
         }
+
+        setPendingRestoreState(null);
       }
       setShowContinueDialog(false);
       setIsGameActive(true);
+
+      // Check if the restored game should show game over dialog immediately
+      if (
+        pendingRestoreState &&
+        settings.mistakeLimit &&
+        (pendingRestoreState.mistakes ?? 0) >= SUDOKU_MISTAKE_LIMIT
+      ) {
+        console.log(
+          "[Autosave] Restored game has too many mistakes, showing game over dialog after continue"
+        );
+        setShowGameOverDialog(true);
+      }
     };
+
     const handleNewGame = async () => {
-      await clearAutosaveState();
+      console.log(
+        "[Autosave] Starting new game, clearing autosave for:",
+        `sudoku_${difficulty}`
+      );
+
+      // Clear autosave for this game
+      try {
+        await clearAutosaveState(`sudoku_${difficulty}`);
+        console.log("[Autosave] Successfully cleared autosave for new game");
+      } catch (error) {
+        console.error("Error clearing autosave:", error);
+      }
+
       setShowContinueDialog(false);
       setRestoredFromSave(false);
+      setPendingRestoreState(null);
       setIsGameActive(true);
-      // New game will be initialized by the effect above
+
+      // Force a new game initialization
+      const newBoard = generateSudoku(difficulty);
+      const cloned = deepClone(newBoard);
+      setInitialBoard(cloned);
+      setBoard(cloned);
+      setSelectedCell(null);
+      setSelectedNumber(null);
+      setLockedNumber(null);
+      setHistory([{ board: cloned, selected: null }]);
+      setMistakes(0);
+      setCorrectStreak(0);
+      setScore(0);
+      setPreviousScore(0);
+      setIsPausing(false);
+      setRemainingHints(1);
+      setShowGameOverDialog(false);
+      setHasUsedSecondChance(false);
+      scoreManager.current = new ScoreManager(GameType.SUDOKU, difficulty);
+      reset();
+
+      console.log("[Autosave] New game initialized successfully");
     };
 
     // Add dialog state and helper functions at the top level of the component
@@ -1005,6 +1187,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
       text: string;
       onPress: () => void;
       style?: "default" | "cancel" | "destructive";
+      icon?: string; // Optional icon name for button
     }
 
     interface DialogState {
@@ -1028,6 +1211,7 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
         text: string;
         onPress: () => void;
         style?: "default" | "cancel" | "destructive";
+        icon?: string; // Optional icon name for button
       }>
     ) => {
       setDialogState({ visible: true, title, message, buttons });
@@ -1132,11 +1316,60 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
           />
         </View>
         <Dialog
-          visible={dialogState.visible}
-          title={dialogState.title}
-          message={dialogState.message}
-          buttons={dialogState.buttons}
-          onDismiss={closeDialog}
+          visible={dialogState.visible || showGameOverDialog}
+          title={
+            showGameOverDialog
+              ? hasUsedSecondChance
+                ? "Game Over"
+                : "Mistake Limit Reached"
+              : dialogState.title
+          }
+          message={
+            showGameOverDialog
+              ? hasUsedSecondChance
+                ? `You've reached the mistake limit again. Would you like to restart or start a new game?`
+                : `You've made ${mistakes} mistakes. Would you like to use a second chance, restart, or start a new game?`
+              : dialogState.message
+          }
+          buttons={
+            showGameOverDialog
+              ? hasUsedSecondChance
+                ? [
+                    {
+                      text: "Restart",
+                      onPress: handleGameOverRestart,
+                      style: "default",
+                    },
+                    {
+                      text: "New Game",
+                      onPress: handleGameOverNewGame,
+                      style: "destructive",
+                    },
+                  ]
+                : [
+                    {
+                      text: "Second Chance", // Dialog should render play icon for this button
+                      onPress: handleSecondChance,
+                      style: "destructive",
+                      icon: "play",
+                    },
+                    {
+                      text: "Restart",
+                      onPress: handleGameOverRestart,
+                      style: "default",
+                    },
+                    {
+                      text: "New Game",
+                      onPress: handleGameOverNewGame,
+                      style: "default",
+                    },
+                  ]
+              : dialogState.buttons
+          }
+          onDismiss={() => {
+            if (showGameOverDialog) setShowGameOverDialog(false);
+            else closeDialog();
+          }}
         />
       </View>
     );
