@@ -18,9 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import NetInfo from "@react-native-community/netinfo";
 import LoginScreen from "./LoginScreen";
-import {
-  apiGatewayRequest,
-} from "../utils/apiGateway";
+import { apiGatewayRequest } from "../utils/apiGateway";
 
 /**
  * Persistent Profile Screen (offline-first)
@@ -81,7 +79,8 @@ const api = {
   },
   enable2FA: async () => {
     const res = await apiGatewayRequest("/users/me/2fa", {
-      method: "POST" });
+      method: "POST",
+    });
     return await res.json();
   },
   logout: async () => {
