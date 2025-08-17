@@ -288,6 +288,9 @@ const SudokuGame = forwardRef<SudokuGameHandle, SudokuGameProps>(
     const { restoreState } = useGameAutosave({
       gameKey: `sudoku_${difficulty}`,
       state: currentGameStateRef.current,
+      gameType: GameType.SUDOKU, // add this
+      difficulty: difficulty, // add this
+      level: 1, // add this (or some other default value)
       saveToCloud: userId
         ? (state) => uploadAutosaveStateToCloud(userId, state)
         : undefined,

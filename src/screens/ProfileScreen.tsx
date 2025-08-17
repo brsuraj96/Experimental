@@ -18,6 +18,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import NetInfo from "@react-native-community/netinfo";
 import LoginScreen from "./LoginScreen";
+import {
+  apiGatewayRequest,
+} from "../utils/apiGateway";
 
 /**
  * Persistent Profile Screen (offline-first)
@@ -46,33 +49,44 @@ const initialUser: User = {
   profilePhoto: null,
 };
 
-// ---- Fake API Client (replace with real endpoints later) ----
+// ---- API Gateway Integration ----
 const api = {
   updateProfile: async (payload: Partial<User>) => {
-    // simulate latency + success
-    await new Promise((r) => setTimeout(r, 500));
-    return { ok: true, data: payload } as const;
+    const res = await apiGatewayRequest("/users/me", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
   },
   uploadProfilePhoto: async (photo: string) => {
-    // simulate latency + success
-    await new Promise((r) => setTimeout(r, 500));
-    return { ok: true, data: photo } as const;
+    const res = await apiGatewayRequest("/users/me/avatar", {
+      method: "POST",
+      body: JSON.stringify({ photo }),
+    });
+    return await res.json();
   },
   upgradeMembership: async () => {
-    await new Promise((r) => setTimeout(r, 500));
-    return { ok: true, data: { membership: "Premium Plan" as const } } as const;
+    const res = await apiGatewayRequest("/users/me/membership", {
+      method: "PUT",
+      body: JSON.stringify({ membership: "premium" }),
+    });
+    return await res.json();
   },
-  changePassword: async (_newPassword: string) => {
-    await new Promise((r) => setTimeout(r, 500));
-    return { ok: true } as const;
+  changePassword: async (newPassword: string) => {
+    const res = await apiGatewayRequest("/users/me/password", {
+      method: "PUT",
+      body: JSON.stringify({ password: newPassword }),
+    });
+    return await res.json();
   },
   enable2FA: async () => {
-    await new Promise((r) => setTimeout(r, 500));
-    return { ok: true } as const;
+    const res = await apiGatewayRequest("/users/me/2fa", {
+      method: "POST" });
+    return await res.json();
   },
   logout: async () => {
-    await new Promise((r) => setTimeout(r, 300));
-    return { ok: true } as const;
+    const res = await apiGatewayRequest("/auth/logout", { method: "POST" });
+    return await res.json();
   },
 };
 

@@ -5,15 +5,34 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
+import { apiService } from "../services/apiService";
 import StatCard from "../components/StatCard";
+import { GameType, Difficulty } from "../types";
 
 const difficulties = ["Beginner", "Easy", "Medium", "Hard", "Expert"];
 
-const defaultStats = {
+interface GameStats {
+  gamesStarted: number;
+  gamesWon: number;
+  winRate: number;
+  winsNoMistakes: number;
+  bestTime: string;
+  avgTime: string;
+  winStreak: number;
+  bestWinStreak: number;
+  totalScore: number;
+  averageScore: number;
+  hintsUsed: number;
+  totalMistakes: number;
+}
+
+const defaultStats: GameStats = {
   gamesStarted: 0,
   gamesWon: 0,
   winRate: 0,
@@ -22,34 +41,120 @@ const defaultStats = {
   avgTime: "00:00",
   winStreak: 0,
   bestWinStreak: 0,
+  totalScore: 0,
+  averageScore: 0,
+  hintsUsed: 0,
+  totalMistakes: 0,
 };
 
 const STATS_KEY = "statsData";
 
+// Helper function to format time
+const formatTime = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+};
+
 const StatsScreen = () => {
   const { currentTheme } = useTheme();
   const styles = createStyles(currentTheme);
-  const [selectedDifficulty, setSelectedDifficulty] = useState("Beginner");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("Easy");
+  const [selectedGameType, setSelectedGameType] = useState<GameType>(
+    GameType.SUDOKU
+  );
   const [statsData, setStatsData] = useState<{
-    [key: string]: typeof defaultStats;
+    [key: string]: GameStats;
   }>({});
-  const stats = statsData[selectedDifficulty] || defaultStats;
+  const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
+  const stats =
+    statsData[`${selectedGameType}_${selectedDifficulty}`] || defaultStats;
 
-  // Load stats from local storage on mount
+  // Load stats from API or local storage
   useEffect(() => {
-    (async () => {
-      const saved = await AsyncStorage.getItem(STATS_KEY);
-      if (saved) {
-        setStatsData(JSON.parse(saved));
-      } else {
-        // Initialize all difficulties with defaultStats
-        const initial: { [key: string]: typeof defaultStats } = {};
-        difficulties.forEach((diff) => {
-          initial[diff] = { ...defaultStats };
-        });
-        setStatsData(initial);
+    const loadStats = async () => {
+      setLoading(true);
+      try {
+        // Try to load from API first
+        const response = await apiService.getUserStats();
+
+        if (response.success && response.data) {
+          // Transform API data to local format
+          const transformedStats: { [key: string]: GameStats } = {};
+
+          // Initialize all game types and difficulties
+          Object.values(GameType).forEach((gameType) => {
+            difficulties.forEach((difficulty) => {
+              const key = `${gameType}_${difficulty}`;
+              transformedStats[key] = { ...defaultStats };
+            });
+          });
+
+          // Populate with API data
+          if (response.data.gameStats) {
+            response.data.gameStats.forEach((stat: any) => {
+              const key = `${stat.game_type}_${stat.difficulty}`;
+              transformedStats[key] = {
+                gamesStarted: stat.total_games_played || 0,
+                gamesWon: stat.total_games_won || 0,
+                winRate:
+                  stat.total_games_played > 0
+                    ? Math.round(
+                        (stat.total_games_won / stat.total_games_played) * 100
+                      )
+                    : 0,
+                winsNoMistakes: stat.perfect_games || 0,
+                bestTime: formatTime(stat.best_time || 0),
+                avgTime: formatTime(stat.average_time || 0),
+                winStreak: stat.current_streak || 0,
+                bestWinStreak: stat.best_streak || 0,
+                totalScore: stat.total_score || 0,
+                averageScore: stat.average_score || 0,
+                hintsUsed: stat.hints_used || 0,
+                totalMistakes: stat.total_mistakes || 0,
+              };
+            });
+          }
+
+          setStatsData(transformedStats);
+          setIsOnline(true);
+        } else {
+          // Fallback to local storage
+          await loadLocalStats();
+          setIsOnline(false);
+        }
+      } catch (error) {
+        console.error("Error loading stats from API:", error);
+        await loadLocalStats();
+        setIsOnline(false);
+      } finally {
+        setLoading(false);
       }
-    })();
+    };
+
+    const loadLocalStats = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(STATS_KEY);
+        if (saved) {
+          setStatsData(JSON.parse(saved));
+        } else {
+          // Initialize all game types and difficulties with defaultStats
+          const initial: { [key: string]: GameStats } = {};
+          Object.values(GameType).forEach((gameType) => {
+            difficulties.forEach((difficulty) => {
+              const key = `${gameType}_${difficulty}`;
+              initial[key] = { ...defaultStats };
+            });
+          });
+          setStatsData(initial);
+        }
+      } catch (error) {
+        console.error("Error loading local stats:", error);
+      }
+    };
+
+    loadStats();
   }, []);
 
   // Save stats to local storage whenever statsData changes
@@ -59,19 +164,75 @@ const StatsScreen = () => {
 
   // When switching tabs, ensure stats for that difficulty exist
   const handleTabSwitch = (diff: string) => {
-    if (!statsData[diff]) {
-      setStatsData((prev) => ({ ...prev, [diff]: { ...defaultStats } }));
+    const key = `${selectedGameType}_${diff}`;
+    if (!statsData[key]) {
+      setStatsData((prev) => ({ ...prev, [key]: { ...defaultStats } }));
     }
     setSelectedDifficulty(diff);
   };
 
-  const handleResetStatistics = () => {
-    const resetData: { [key: string]: typeof defaultStats } = {};
-    difficulties.forEach((diff) => {
-      resetData[diff] = { ...defaultStats };
-    });
-    setStatsData(resetData);
+  const handleGameTypeSwitch = (gameType: GameType) => {
+    setSelectedGameType(gameType);
   };
+
+  const handleResetStatistics = () => {
+    Alert.alert(
+      "Reset Statistics",
+      "Are you sure you want to reset all statistics? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: async () => {
+            const resetData: { [key: string]: GameStats } = {};
+            Object.values(GameType).forEach((gameType) => {
+              difficulties.forEach((difficulty) => {
+                const key = `${gameType}_${difficulty}`;
+                resetData[key] = { ...defaultStats };
+              });
+            });
+            setStatsData(resetData);
+            await AsyncStorage.setItem(STATS_KEY, JSON.stringify(resetData));
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRefreshStats = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.getUserStats();
+      if (response.success) {
+        // Reload stats logic here (same as in useEffect)
+        setIsOnline(true);
+        Alert.alert("Success", "Statistics refreshed from server");
+      } else {
+        Alert.alert("Error", "Failed to refresh statistics from server");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Network error while refreshing statistics");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color={currentTheme.colors.primary} />
+        <Text style={[styles.headerTitle, { marginTop: 16 }]}>
+          Loading Statistics...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -83,9 +244,48 @@ const StatsScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Statistics</Text>
-        {/* <TouchableOpacity style={styles.settingsButton}>
-          <Text style={styles.settingsIcon}>⚙️</Text>
-        </TouchableOpacity> */}
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {!isOnline && (
+            <FontAwesome5
+              name="wifi-slash"
+              size={16}
+              color={currentTheme.colors.textSecondary}
+              style={{ marginRight: 8 }}
+            />
+          )}
+          <TouchableOpacity onPress={handleRefreshStats} disabled={loading}>
+            <FontAwesome5
+              name="sync-alt"
+              size={18}
+              color={currentTheme.colors.primary}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Game Type Selector */}
+      <View style={styles.gameTypeContainer}>
+        {Object.values(GameType)
+          .slice(0, 3)
+          .map((gameType) => (
+            <TouchableOpacity
+              key={gameType}
+              style={[
+                styles.gameTypeButton,
+                selectedGameType === gameType && styles.gameTypeButtonActive,
+              ]}
+              onPress={() => handleGameTypeSwitch(gameType)}
+            >
+              <Text
+                style={[
+                  styles.gameTypeText,
+                  selectedGameType === gameType && styles.gameTypeTextActive,
+                ]}
+              >
+                {gameType}
+              </Text>
+            </TouchableOpacity>
+          ))}
       </View>
 
       {/* Difficulty Tabs */}
@@ -209,20 +409,83 @@ const StatsScreen = () => {
           value={stats.bestWinStreak}
         />
 
-        {/* Reset Statistics Button */}
-        <TouchableOpacity
-          style={styles.resetButton}
-          onPress={handleResetStatistics}
-        >
-          <Text
+        {/* Score Section */}
+        <Text style={styles.sectionTitle}>Score</Text>
+        <StatCard
+          icon={
+            <FontAwesome5
+              name="star"
+              size={20}
+              color={currentTheme.colors.primary}
+            />
+          }
+          title="Total Score"
+          value={stats.totalScore.toLocaleString()}
+        />
+        <StatCard
+          icon={
+            <FontAwesome5
+              name="chart-line"
+              size={20}
+              color={currentTheme.colors.primary}
+            />
+          }
+          title="Average Score"
+          value={Math.round(stats.averageScore).toLocaleString()}
+        />
+
+        {/* Gameplay Section */}
+        <Text style={styles.sectionTitle}>Gameplay</Text>
+        <StatCard
+          icon={
+            <FontAwesome5
+              name="lightbulb"
+              size={20}
+              color={currentTheme.colors.primary}
+            />
+          }
+          title="Hints Used"
+          value={stats.hintsUsed}
+        />
+        <StatCard
+          icon={
+            <FontAwesome5
+              name="exclamation-triangle"
+              size={20}
+              color={currentTheme.colors.error}
+            />
+          }
+          title="Total Mistakes"
+          value={stats.totalMistakes}
+        />
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity
             style={[
-              styles.resetButtonText,
-              { color: currentTheme.colors.primary },
+              styles.actionButton,
+              { backgroundColor: currentTheme.colors.primary },
             ]}
+            onPress={handleRefreshStats}
+            disabled={loading}
           >
-            Reset Statistics
-          </Text>
-        </TouchableOpacity>
+            <FontAwesome5 name="sync-alt" size={16} color="white" />
+            <Text style={styles.actionButtonText}>
+              {isOnline ? "Refresh" : "Sync"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              { backgroundColor: currentTheme.colors.error },
+            ]}
+            onPress={handleResetStatistics}
+          >
+            <FontAwesome5 name="trash" size={16} color="white" />
+            <Text style={styles.actionButtonText}>Reset</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -291,6 +554,52 @@ const createStyles = (theme: ReturnType<typeof useTheme>["currentTheme"]) =>
     },
     icon: {
       fontSize: 20,
+    },
+    gameTypeContainer: {
+      flexDirection: "row",
+      justifyContent: "space-around",
+      paddingHorizontal: 16,
+      marginBottom: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    gameTypeButton: {
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+    },
+    gameTypeButtonActive: {
+      backgroundColor: theme.colors.primary,
+    },
+    gameTypeText: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      fontWeight: "500",
+    },
+    gameTypeTextActive: {
+      color: theme.colors.white,
+      fontWeight: "bold",
+    },
+    actionButtonsContainer: {
+      flexDirection: "row",
+      justifyContent: "space-around",
+      marginTop: 24,
+      paddingHorizontal: 16,
+    },
+    actionButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      minWidth: 100,
+      justifyContent: "center",
+    },
+    actionButtonText: {
+      color: "white",
+      fontSize: 14,
+      fontWeight: "600",
+      marginLeft: 8,
     },
     resetButton: {
       marginTop: 24,

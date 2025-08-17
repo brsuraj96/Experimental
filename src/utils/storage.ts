@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import { GameProgress, GameType, Difficulty } from "../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import debounce from "lodash.debounce";
+import { apiService } from "../services/apiService";
 
 const STORAGE_KEYS = {
   GAME_PROGRESS: "puzzle_world_progress",
@@ -238,18 +239,140 @@ export const clearAutosaveState = async (gameKey?: string): Promise<void> => {
 };
 
 // ------------------------------------
-// Cloud Sync Stubs
+// Cloud Sync Implementation
 // ------------------------------------
+
 export const uploadAutosaveStateToCloud = async (
   userId: string,
   state: any
 ): Promise<void> => {
-  console.log(`[CloudSync] Would upload autosave for user ${userId}`, state);
+  try {
+    console.log(`[CloudSync] Uploading autosave for user ${userId}`);
+
+    if (state.gameType && state.difficulty && state.level) {
+      const response = await apiService.saveGameState(
+        state.gameType as GameType,
+        state.difficulty as Difficulty,
+        state.level,
+        state,
+        state.moves || 0,
+        state.timeElapsed || 0
+      );
+
+      if (response.success) {
+        console.log(
+          `[CloudSync] Successfully uploaded autosave for user ${userId}`
+        );
+      } else {
+        console.error(`[CloudSync] Failed to upload autosave:`, response.error);
+      }
+    }
+  } catch (error) {
+    console.error(
+      `[CloudSync] Error uploading autosave for user ${userId}:`,
+      error
+    );
+  }
 };
 
 export const downloadAutosaveStateFromCloud = async (
-  userId: string
+  userId: string,
+  gameType?: GameType,
+  difficulty?: Difficulty,
+  level?: number
 ): Promise<{ state: any; timestamp: number } | null> => {
-  console.log(`[CloudSync] Would download autosave for user ${userId}`);
-  return null;
+  try {
+    console.log(`[CloudSync] Downloading autosave for user ${userId}`);
+
+    if (gameType && difficulty && level) {
+      const response = await apiService.loadGameState(
+        gameType,
+        difficulty,
+        level
+      );
+
+      if (response.success && response.data) {
+        console.log(
+          `[CloudSync] Successfully downloaded autosave for user ${userId}`
+        );
+        return {
+          state: response.data.save_data,
+          timestamp: new Date(response.data.updated_at).getTime(),
+        };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error(
+      `[CloudSync] Error downloading autosave for user ${userId}:`,
+      error
+    );
+    return null;
+  }
+};
+
+// Enhanced autosave with API integration
+export const syncGameProgressToCloud = async (
+  gameType: GameType,
+  difficulty: Difficulty,
+  sessionData: {
+    level: number;
+    score: number;
+    time: number;
+    moves: number;
+    hints: number;
+    mistakes: number;
+    completed: boolean;
+  }
+): Promise<boolean> => {
+  try {
+    const response = await apiService.updateGameProgress(
+      gameType,
+      difficulty,
+      sessionData.level,
+      sessionData
+    );
+
+    return response.success;
+  } catch (error) {
+    console.error("[CloudSync] Error syncing game progress:", error);
+    return false;
+  }
+};
+
+// Sync local progress to cloud
+export const syncAllProgressToCloud = async (): Promise<boolean> => {
+  try {
+    const localProgress = await getGameProgress();
+    let syncSuccess = true;
+
+    for (const gameType of Object.keys(localProgress) as GameType[]) {
+      for (const difficulty of Object.keys(
+        localProgress[gameType]
+      ) as Difficulty[]) {
+        const level = localProgress[gameType][difficulty];
+        if (level > 0) {
+          const success = await syncGameProgressToCloud(gameType, difficulty, {
+            level,
+            score: 0, // We don't have historical score data in local storage
+            time: 0,
+            moves: 0,
+            hints: 0,
+            mistakes: 0,
+            completed: true,
+          });
+
+          if (!success) {
+            syncSuccess = false;
+          }
+        }
+      }
+    }
+
+    return syncSuccess;
+  } catch (error) {
+    console.error("[CloudSync] Error syncing all progress:", error);
+    return false;
+  }
 };
