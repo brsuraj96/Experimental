@@ -35,7 +35,7 @@ const HomeStack = () => (
     <Stack.Screen name="Completion" component={CompletionScreen} />
     <Stack.Screen name="Settings" component={SettingsScreen} />
     <Stack.Screen name="About" component={AboutScreen} />
-    <Stack.Screen name="Feedback" component={FeedbackScreen} />
+    <Stack.Screen name="HelpCenter" component={FeedbackScreen} />
     <Stack.Screen name="HowToPlay" component={HowToPlayScreen} />
     <Stack.Screen name="HowToPlayDetail" component={HowToPlayDetailScreen} />
   </Stack.Navigator>

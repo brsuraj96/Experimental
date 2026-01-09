@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: "100%",
     paddingHorizontal: 24,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   closeButton: {
     padding: 8,
@@ -338,13 +338,14 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    flex: 1,
+    flex: 0,
+    height: "84%",
   },
   videoSlideWrapper: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
     width: "100%",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    height: "84%",
   },
   videoContainer: {
     width: "90%",
@@ -354,6 +355,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     alignItems: "center",
     justifyContent: "center",
+    height: "90%",
   },
   video: { width: "100%", height: "100%" },
   videoOverlay: {
@@ -427,7 +429,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginVertical: 20,
+    marginBottom: 20,
   },
   dot: {
     width: 8,

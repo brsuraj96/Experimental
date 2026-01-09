@@ -16,8 +16,10 @@ import { BackHandler } from "react-native";
 const APP_NAME = "Puzzle World";
 const APP_SUBTITLE = "Free Classic Puzzle Games";
 const APP_VERSION = "1.0.0";
-const TERMS_URL = "https://puzzleworld.app/terms";
-const PRIVACY_URL = "https://puzzleworld.app/privacy";
+const TERMS_URL =
+  "https://sites.google.com/view/puzzle-world-policies/terms-of-service";
+const PRIVACY_URL =
+  "https://sites.google.com/view/puzzle-world-policies/privacy-policy";
 
 const AboutScreen = () => {
   const { currentTheme } = useTheme();

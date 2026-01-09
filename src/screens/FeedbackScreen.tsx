@@ -9,17 +9,29 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from "react-native";
+import Dialog from "../components/common/Dialog";
+
+interface DialogButton {
+  text: string;
+  onPress: () => void;
+  style?: "default" | "cancel" | "destructive";
+  icon?: string;
+}
 import { useTheme } from "../context/ThemeContext";
 import { useNavigation } from "@react-navigation/native";
 import { FontAwesome5 } from "@expo/vector-icons";
 
 const FEEDBACK_OPTIONS = [
   "Select the Problem Type",
-  "Purchase",
+  // "Purchase",
   "Bug",
   "Suggestion",
 ];
+
+const RESPONSE_URL =
+  "https://script.google.com/macros/s/AKfycbxbXJAwdmVCooHEbYSYDky9diZj9EfKy_mCy9_KJ5qMsFny7aSNTP2VkHWmM63aHwNt/exec";
 
 const FeedbackScreen = () => {
   const { currentTheme } = useTheme();
@@ -41,6 +53,12 @@ const FeedbackScreen = () => {
     message: false,
   });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  // Dialog modal state
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogTitle, setDialogTitle] = useState("");
+  const [dialogMessage, setDialogMessage] = useState("");
+  const [dialogButtons, setDialogButtons] = useState<DialogButton[]>([]);
 
   // Validation logic
   const isNameValid = name.trim().length > 0;
@@ -52,11 +70,94 @@ const FeedbackScreen = () => {
   const showCategoryError = (touched.category || submitted) && !isCategoryValid;
   const showMessageError = (touched.message || submitted) && !isMessageValid;
 
-  const handleSend = () => {
+  const showDialog = (
+    title: string,
+    message: string,
+    buttons: Array<{
+      text: string;
+      onPress: () => void;
+      style?: "default" | "cancel" | "destructive";
+      icon?: string;
+    }>
+  ) => {
+    setDialogTitle(title);
+    setDialogMessage(message);
+    setDialogButtons(buttons);
+    setDialogVisible(true);
+  };
+
+  const handleSend = async () => {
     setSubmitted(true);
-    if (!isFormValid) return;
-    // Placeholder: Implement send logic
-    navigation.goBack();
+    if (!isFormValid) {
+      showDialog("Error", "Please enter your feedback before submitting.", [
+        {
+          text: "OK",
+          onPress: () => setDialogVisible(false),
+          style: "cancel",
+        },
+      ]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch(RESPONSE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          category,
+          message,
+          createdAt: new Date().toISOString(),
+        }),
+      });
+      const result = await response.json();
+      console.log("Response from script:", result);
+      if (result.success) {
+        // reset form or navigate
+        showDialog(
+          "Thank you!",
+          "Your feedback has been submitted successfully.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                setDialogVisible(false);
+                setName("");
+                setEmail("");
+                setCategory(FEEDBACK_OPTIONS[0]);
+                setMessage("");
+                navigation.goBack();
+              },
+              style: "default",
+            },
+          ]
+        );
+      } else {
+        showDialog(
+          "❌ Failed: ",
+          result.error || "Something went wrong. Please try again later.",
+          [
+            {
+              text: "OK",
+              onPress: () => setDialogVisible(false),
+              style: "cancel",
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      showDialog("Error", "Something went wrong. Please try again later.", [
+        {
+          text: "OK",
+          onPress: () => setDialogVisible(false),
+          style: "cancel",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Deselect all inputs and close dropdown on outside press
@@ -76,6 +177,13 @@ const FeedbackScreen = () => {
     >
       <TouchableWithoutFeedback onPress={handleDismiss} accessible={false}>
         <View style={{ flex: 1 }}>
+          <Dialog
+            visible={dialogVisible}
+            title={dialogTitle}
+            message={dialogMessage}
+            buttons={dialogButtons}
+            onDismiss={() => setDialogVisible(false)}
+          />
           {/* Header */}
           <View
             style={[
@@ -287,11 +395,15 @@ const FeedbackScreen = () => {
               onPress={handleSend}
               disabled={!isFormValid}
             >
-              <FontAwesome5
-                name="location-arrow"
-                size={32}
-                color={currentTheme.colors.primary}
-              />
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <FontAwesome5
+                  name="location-arrow"
+                  size={32}
+                  color={currentTheme.colors.primary}
+                />
+              )}
             </TouchableOpacity>
           </View>
         </View>
